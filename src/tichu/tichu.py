@@ -24,7 +24,7 @@ class Tichu:
             for value in NORMAL_CARD_VALUES:
                 card = Card(color, value)
                 deck.append(card)
-        deck.append(Card(Color.SPECIAL, 0))   # Dog
+        deck.append(Card(Color.SPECIAL, -1))   # Dog
         deck.append(Card(Color.SPECIAL, 1))   # Mah Jong
         deck.append(Card(Color.SPECIAL, 15))  # Phoenix
         deck.append(Card(Color.SPECIAL, 16))  # Dragon

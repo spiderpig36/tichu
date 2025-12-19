@@ -28,10 +28,6 @@ class Combination():
                     return cls(CombinationType.PAIR, cards[0].value)
                 case 3:
                     return cls(CombinationType.TRIPLE, cards[0].value)
-        if any([card for card in cards if card.value == SpecialCard.DOG.value]):
-            raise InvalidCombinationError("Dog cannot be played in combinations.")
-        if any([card for card in cards if card.value == SpecialCard.DRAGON.value]):
-            raise InvalidCombinationError("Dragon cannot be played in combinations.")
         if len(cards) == 4 and all(card.value == cards[0].value for card in cards):
                 return cls(CombinationType.BOMB, cards[0].value)
         cards.sort(key=lambda c: c.value)
@@ -47,18 +43,19 @@ class Combination():
                     return cls(CombinationType.STRAIGHT, cards[-2].value, len(cards))
                 return cls(CombinationType.STRAIGHT, cards[-2].value + 1, len(cards))
         if len(cards) >= 4 and len(cards) % 2 == 0:
-            is_stair = True
-            for i in range(0, len(cards), 2):
-                if cards[i].value != cards[i + 1].value:
-                    is_stair = False
-                    break
-                if i > 0 and cards[i].value != cards[i - 2].value + 1:
-                    is_stair = False
-                    break
-            if is_stair:
-                return cls(CombinationType.STAIR, cards[-1].value, len(cards) // 2)
-        if len(cards) == 5:
             values: dict[int, int] = {}
+            for card in cards:
+                values[card.value] = values.get(card.value, 0) + 1
+            if any([card for card in cards if card.value == SpecialCard.PHOENIX.value]):
+                del values[SpecialCard.PHOENIX.value]
+                to_add = next((key for key, val in sorted(values.items(), key=lambda item: item[0], reverse=True) if val == 1), -1)
+                if to_add != -1:
+                    values[to_add] += 1
+            straight_values = sorted(values.keys())
+            if all(val == 2 for val in values.values()) and straight_values[-1] - straight_values[0] == len(values) - 1:
+                return cls(CombinationType.STAIR, max(values.keys()), len(cards) // 2)
+        if len(cards) == 5:
+            values = {}
             for card in cards:
                 values[card.value] = values.get(card.value, 0) + 1
             if any([card for card in cards if card.value == SpecialCard.PHOENIX.value]):
