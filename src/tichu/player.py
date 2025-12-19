@@ -1,10 +1,10 @@
-from card import Color
+from .card import Card, Color
 
 
 class Player:
     def __init__(self, name: str = "Anonymous"):
         self.name = name
-        self.hand = []
+        self.hand: list[Card] = []
 
     def add_card(self, card):
         """Add a card to the player's hand."""
@@ -26,5 +26,5 @@ class Player:
         return any([card for card in self.hand if card.color == Color.SPECIAL and card.value == 1])
 
     def __str__(self):
-        hand = '\n  '.join([str(card) for card in self.hand])
-        return f"Player {self.name} with hand: \n{hand}"
+        hand = '\n  '.join([''] + [f"{i}: {card}" for i, card in enumerate(self.hand)])
+        return f"Player {self.name} with hand: {hand}"

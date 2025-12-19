@@ -34,6 +34,12 @@ Source = "https://github.com/Nic Dorner/tichu"
 [tool.hatch.version]
 path = "src/tichu/__about__.py"
 
+
+[tool.hatch.envs.test]
+dependencies = [
+  "pytest"
+]
+
 [tool.hatch.envs.types]
 extra-dependencies = [
   "mypy>=1.0.0",
