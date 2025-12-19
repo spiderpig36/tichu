@@ -35,10 +35,17 @@ class Combination():
         if len(cards) == 4 and all(card.value == cards[0].value for card in cards):
                 return cls(CombinationType.BOMB, cards[0].value)
         cards.sort(key=lambda c: c.value)
-        if len(cards) >= 5 and all(cards[i].value + 1 == cards[i + 1].value for i in range(len(cards) - 1)):
-            if all(cards[i].color == cards[i + 1].color for i in range(len(cards) - 1)):
-                return cls(CombinationType.STRAIGHT_BOMB, cards[-1].value, len(cards))
-            return cls(CombinationType.STRAIGHT, cards[-1].value, len(cards))
+        if len(cards) >= 5:
+            if cards[-1].value - cards[0].value == len(cards) - 1:
+                if all(cards[i].color == cards[i + 1].color for i in range(len(cards) - 1)):
+                    return cls(CombinationType.STRAIGHT_BOMB, cards[-1].value, len(cards))
+                return cls(CombinationType.STRAIGHT, cards[-1].value, len(cards))
+            if cards[-2].value - cards[0].value == len(cards) - 1 and cards[-1].value == SpecialCard.PHOENIX.value:
+                return cls(CombinationType.STRAIGHT, cards[-2].value, len(cards))
+            if cards[-2].value - cards[0].value == len(cards) - 2 and cards[-1].value == SpecialCard.PHOENIX.value:
+                if cards[-2].value == 14:
+                    return cls(CombinationType.STRAIGHT, cards[-2].value, len(cards))
+                return cls(CombinationType.STRAIGHT, cards[-2].value + 1, len(cards))
         if len(cards) >= 4 and len(cards) % 2 == 0:
             is_stair = True
             for i in range(0, len(cards), 2):
