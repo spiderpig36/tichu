@@ -32,6 +32,9 @@ class Card:
         if self.color == Color.SPECIAL:
             return SpecialCard(self.value).name
         return f"{self.color.name}  {self.value}"
+    
+    def __eq__(self, value):
+        return self.color == value.color and self.value == value.value
 
     def __repr__(self):
         return f"Card(color={self.color}, value={self.value})"

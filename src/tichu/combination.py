@@ -17,9 +17,18 @@ class CombinationType(Enum):
     BOMB = 6
     STRAIGHT_BOMB = 7
 
+    def get_bomb_strength(self):
+        match self:
+            case CombinationType.BOMB:
+                return 1
+            case CombinationType.STRAIGHT_BOMB:
+                return 2
+            case _:
+                return 0
+
 class Combination():
     @classmethod
-    def from_cards(cls, cards: list[Card]) -> Optional["Combination"]:
+    def from_cards(cls, cards: list[Card]) -> Combination:
         if len(cards) <= 3 and all(card.value == cards[0].value or card.value == SpecialCard.PHOENIX.value for card in cards) :
             match len(cards):
                 case 1:
@@ -36,35 +45,36 @@ class Combination():
                 if all(cards[i].color == cards[i + 1].color for i in range(len(cards) - 1)):
                     return cls(CombinationType.STRAIGHT_BOMB, cards[-1].value, len(cards))
                 return cls(CombinationType.STRAIGHT, cards[-1].value, len(cards))
-            if cards[-2].value - cards[0].value == len(cards) - 1 and cards[-1].value == SpecialCard.PHOENIX.value:
-                return cls(CombinationType.STRAIGHT, cards[-2].value, len(cards))
-            if cards[-2].value - cards[0].value == len(cards) - 2 and cards[-1].value == SpecialCard.PHOENIX.value:
-                if cards[-2].value == 14:
+            if cards[-1].value == SpecialCard.PHOENIX.value:
+                if cards[-2].value - cards[0].value == len(cards) - 1:
                     return cls(CombinationType.STRAIGHT, cards[-2].value, len(cards))
-                return cls(CombinationType.STRAIGHT, cards[-2].value + 1, len(cards))
+                if cards[-2].value - cards[0].value == len(cards) - 2:
+                    if cards[-2].value == 14:
+                        return cls(CombinationType.STRAIGHT, cards[-2].value, len(cards))
+                    return cls(CombinationType.STRAIGHT, cards[-2].value + 1, len(cards))
         if len(cards) >= 4 and len(cards) % 2 == 0:
-            values: dict[int, int] = {}
+            card_count: dict[int, int] = {}
             for card in cards:
-                values[card.value] = values.get(card.value, 0) + 1
+                card_count[card.value] = card_count.get(card.value, 0) + 1
             if any([card for card in cards if card.value == SpecialCard.PHOENIX.value]):
-                del values[SpecialCard.PHOENIX.value]
-                to_add = next((key for key, val in sorted(values.items(), key=lambda item: item[0], reverse=True) if val == 1), -1)
+                del card_count[SpecialCard.PHOENIX.value]
+                to_add = next((key for key, val in card_count.items() if val == 1), -1)
                 if to_add != -1:
-                    values[to_add] += 1
-            straight_values = sorted(values.keys())
-            if all(val == 2 for val in values.values()) and straight_values[-1] - straight_values[0] == len(values) - 1:
-                return cls(CombinationType.STAIR, max(values.keys()), len(cards) // 2)
+                    card_count[to_add] += 1
+            straight_values = sorted(card_count.keys())
+            if all(val == 2 for val in card_count.values()) and straight_values[-1] - straight_values[0] == len(card_count) - 1:
+                return cls(CombinationType.STAIR, max(card_count.keys()), len(cards) // 2)
         if len(cards) == 5:
-            values = {}
+            card_count = {}
             for card in cards:
-                values[card.value] = values.get(card.value, 0) + 1
+                card_count[card.value] = card_count.get(card.value, 0) + 1
             if any([card for card in cards if card.value == SpecialCard.PHOENIX.value]):
-                del values[SpecialCard.PHOENIX.value]
-                to_add = next((key for key, val in sorted(values.items(), key=lambda item: item[0], reverse=True) if val == 2), -1)
+                del card_count[SpecialCard.PHOENIX.value]
+                to_add = next((key for key, val in sorted(card_count.items(), key=lambda item: item[0], reverse=True) if val == 2), -1)
                 if to_add != -1:
-                    values[to_add] += 1
-            if sorted(values.values()) == [2, 3]:
-                return cls(CombinationType.FULL_HOUSE, next(key for key, val in values.items() if val == 3))
+                    card_count[to_add] += 1
+            if sorted(card_count.values()) == [2, 3]:
+                return cls(CombinationType.FULL_HOUSE, next(key for key, val in card_count.items() if val == 3))
         raise InvalidCombinationError("Invalid combination of cards.")
 
     def __init__(self, combination_type: CombinationType, value: int, length: int = 1):
