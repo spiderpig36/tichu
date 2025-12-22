@@ -1,11 +1,6 @@
-
 from enum import Enum
-from typing import Optional
 
-from .card import Card, Color, SpecialCard
-
-class InvalidCombinationError(Exception):
-    pass
+from .card import Card, SpecialCard
 
 class CombinationType(Enum):
     SINGLE = 0
@@ -28,7 +23,7 @@ class CombinationType(Enum):
 
 class Combination():
     @classmethod
-    def from_cards(cls, cards: list[Card]) -> Combination:
+    def from_cards(cls, cards: list[Card]) -> Combination | None:
         if len(cards) <= 3 and all(card.value == cards[0].value or card.value == SpecialCard.PHOENIX.value for card in cards) :
             match len(cards):
                 case 1:
@@ -75,7 +70,7 @@ class Combination():
                     card_count[to_add] += 1
             if sorted(card_count.values()) == [2, 3]:
                 return cls(CombinationType.FULL_HOUSE, next(key for key, val in card_count.items() if val == 3))
-        raise InvalidCombinationError("Invalid combination of cards.")
+        return None
 
     def __init__(self, combination_type: CombinationType, value: int, length: int = 1):
         self.combination_type = combination_type

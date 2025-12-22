@@ -1,6 +1,6 @@
 import pytest
 from tichu.card import Card, Color, SpecialCard
-from tichu.combination import Combination, CombinationType, InvalidCombinationError
+from tichu.combination import Combination, CombinationType
 
 @pytest.mark.parametrize("cards, expected_type, expected_value", [
     ([Card(Color.RED, 10)], CombinationType.SINGLE, 10),
@@ -37,5 +37,5 @@ def test_valid_combinations(cards, expected_type, expected_value):
     [Card(Color.SPECIAL, SpecialCard.DRAGON.value), Card(Color.GREEN, 14)],
 ])
 def test_invalid_combinations(cards):
-    with pytest.raises(InvalidCombinationError):
-        Combination.from_cards(cards)
+    combination = Combination.from_cards(cards)
+    assert combination is None

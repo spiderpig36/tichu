@@ -1,4 +1,5 @@
 from enum import Enum
+from functools import reduce
 
 NORMAL_CARD_VALUES = range(2, 15)
 
@@ -27,6 +28,25 @@ class Card:
         if color == Color.SPECIAL and value not in SpecialCard.values():
             raise ValueError("Special cards can only have values 0 (Dog), 1, 15 (Phoenix), or 16 (Dragon).")
         self.value = value
+
+    def get_score(self) -> int:
+        match self.value:
+            case SpecialCard.DOG.value:
+                return 0
+            case SpecialCard.PHOENIX.value:
+                return -25
+            case SpecialCard.DRAGON.value:
+                return 25
+            case 5:
+                return 5
+            case 10 | 13:
+                return 10
+            case _:
+                return 0
+            
+    @staticmethod
+    def count_card_scores(cards: list[Card]) -> int:
+        return reduce(lambda total, card: total + card.get_score(), cards, 0) 
 
     def __str__(self):
         if self.color == Color.SPECIAL:
