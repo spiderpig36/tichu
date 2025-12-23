@@ -34,8 +34,8 @@ class Tichu:
         self.players = [Player(f"Player {i}") for i in range(NUM_PLAYERS)]
         self.random = random.Random(seed)
 
-        self.current_player_id = 0
-        self.winning_player_id: int | None = None
+        self.current_player_idx = 0
+        self.winning_player_idx: int | None = None
         self.current_combination: Combination | None = None
         self.current_wish: int | None = None
         self.card_stack: list[Card] = []
@@ -61,8 +61,8 @@ class Tichu:
         for player in self.players:
             player.hand.sort(key=lambda c: c.value)
 
-        self.current_player_id = next(i for i, p in enumerate(self.players) if p.has_mahjong())
-        self.winning_player_id = None
+        self.current_player_idx = next(i for i, p in enumerate(self.players) if p.has_mahjong())
+        self.winning_player_idx = None
         self.current_combination = None
         self.current_wish = None
         self.card_stack.clear()
@@ -70,13 +70,13 @@ class Tichu:
 
     @property
     def current_player(self) -> Player:
-        return self.players[self.current_player_id]
+        return self.players[self.current_player_idx]
 
     @property
     def winning_player(self) -> Player | None:
-        if self.winning_player_id is None:
+        if self.winning_player_idx is None:
             return None
-        return self.players[self.winning_player_id]
+        return self.players[self.winning_player_idx]
 
     def get_play(self) -> set[int] | Literal["pass"] | Literal["tichu"]:
         prompt = input("Enter the index of the card to play separated by a comma or 'pass': ")
@@ -112,13 +112,44 @@ class Tichu:
             self.output_manager.write("Invalid input. Please enter a numeric card value. Try again.")
             return self.get_mahjong_wish()
 
+    def get_push(self) -> set[int]:
+        push = input("Enter cards to push, first player to the left, next partner player and last player to the right, separated by commas: ")
+        try:
+            card_indices = [int(idx.strip()) for idx in push.split(",")]
+            if len(card_indices) != 3:
+                self.output_manager.write("You must enter exactly three card indices. Try again.")
+                return self.get_push()
+            if not all(0 <= idx < 14 for idx in card_indices):
+                self.output_manager.write("One or more card indices are out of range. Try again.")
+                return self.get_push()
+            return set(card_indices)
+        except ValueError:
+            self.output_manager.write("Invalid input. Please enter valid card indices separated by commas. Try again.")
+            return self.get_push()
+
     @property    
     def end_of_round(self) -> bool:
         return len(self.player_rankings) == 3 or (len(self.player_rankings) == 2 and self.player_rankings[0] % 2 == self.player_rankings[1] % 2)
 
+    def push_cards(self):
+        cards_for_players = [[], [], [], []]
+        for player_idx, player in enumerate(self.players):
+            card_indices = self.get_push()
+            cards_to_push = [card for card_idx, card in enumerate(player.hand) if card_idx in card_indices]
+            for card in cards_to_push:
+                player.play_card(card)
+            cards_for_players[(player_idx - 1) % NUM_PLAYERS].append(cards_to_push[0])
+            cards_for_players[(player_idx + 2) % NUM_PLAYERS].append(cards_to_push[1])
+            cards_for_players[(player_idx + 1) % NUM_PLAYERS].append(cards_to_push[2])
+        for player_idx, player in enumerate(self.players):
+            for card in cards_for_players[player_idx]:
+                player.add_card(card)
+            player.hand.sort(key=lambda c: c.value)
+
+
     def next_turn(self):
         self.output_manager.write(str(self.current_player))
-        if self.current_player_id in self.player_rankings:
+        if self.current_player_idx in self.player_rankings:
             self.output_manager.write(f"{self.current_player.name} has no cards left and is skipped!")
         else:
             current_hand = self.current_player.hand
@@ -138,14 +169,14 @@ class Tichu:
                             if recipient_id < 0 or recipient_id >= NUM_PLAYERS:
                                 self.output_manager.write("Invalid player index. Try again.")
                                 recipient_id = None
-                            if recipient_id % 2 == self.winning_player_id % 2:
+                            if recipient_id % 2 == self.winning_player_idx % 2:
                                 self.output_manager.write("Cannot give the dragon stack to your teammate. Try again.")
                                 recipient_id = None
-                            self.winning_player_id = recipient_id
+                            self.winning_player_idx = recipient_id
                     self.current_combination = None
                     self.winning_player.card_stack.extend(self.card_stack)
                     self.card_stack.clear()
-                    self.current_player_id = self.winning_player_id
+                    self.current_player_idx = self.winning_player_idx
                     return
             elif play == "tichu":
                 if len(self.current_player.hand) != 14:
@@ -170,12 +201,12 @@ class Tichu:
                         raise InvalidPlayError("Played combination must match the current combination type with the same length.")
             
                 self.current_combination = next_combination
-                self.winning_player_id = self.current_player_id
+                self.winning_player_idx = self.current_player_idx
                 for card in played_cards:
                     self.current_player.play_card(card)
                 if len(self.current_player.hand) == 0:
                     self.output_manager.write(f"{self.current_player.name} has played all their cards and finished the round!")
-                    self.player_rankings.append(self.current_player_id)
+                    self.player_rankings.append(self.current_player_idx)
                 self.card_stack.extend(played_cards)
 
                 self.output_manager.write(f"Played combination: {self.current_combination.combination_type.name}")
@@ -183,7 +214,7 @@ class Tichu:
 
                 if self.current_combination.combination_type == CombinationType.SINGLE and self.current_combination.value == SpecialCard.DOG.value:
                     self.output_manager.write(f"{self.current_player.name} played the Dog and passes the turn to their teammate.")
-                    self.current_player_id = (self.current_player_id + 2) % NUM_PLAYERS
+                    self.current_player_idx = (self.current_player_idx + 2) % NUM_PLAYERS
                     return
                 if self.current_combination.combination_type == CombinationType.SINGLE and self.current_combination.value == SpecialCard.PHOENIX.value:
                     self.current_combination.value = self.card_stack[-2] + 1 if len(self.card_stack) > 1 else NORMAL_CARD_VALUES[0]
@@ -191,7 +222,7 @@ class Tichu:
                     self.current_wish = self.get_mahjong_wish()
                     self.output_manager.write(f"{self.current_player.name} wishes for card value {self.current_wish}.")
             
-        self.current_player_id = (self.current_player_id + 1) % NUM_PLAYERS
+        self.current_player_idx = (self.current_player_idx + 1) % NUM_PLAYERS
 
     def end_round_scoring(self):
         if len(self.player_rankings) == 2 and self.player_rankings[0] % 2 == self.player_rankings[1] % 2:
