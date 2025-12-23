@@ -131,15 +131,15 @@ class TestNextTurnPlayCard:
         
         pair_indices = next((indices for indices in value_counts.values() if len(indices) >= 2), None)
         
-        if pair_indices:
-            play_set = {pair_indices[0], pair_indices[1]}
-            initial_hand_size = len(player.hand)
-            
-            with patch.object(game, 'get_play', return_value=play_set):
-                game.next_turn()
-            
-            assert len(player.hand) == initial_hand_size - 2
-            assert game.current_combination.combination_type == CombinationType.PAIR
+        assert pair_indices
+        play_set = {pair_indices[0], pair_indices[1]}
+        initial_hand_size = len(player.hand)
+        
+        with patch.object(game, 'get_play', return_value=play_set):
+            game.next_turn()
+        
+        assert len(player.hand) == initial_hand_size - 2
+        assert game.current_combination.combination_type == CombinationType.PAIR
 
     def test_play_higher_card_after_single(self):
         """Test playing a higher single card than current combination."""
@@ -159,13 +159,12 @@ class TestNextTurnPlayCard:
         # Find a card with value > 5
         valid_card_indices = [i for i, card in enumerate(player.hand) if card.value > 5]
         
-        if valid_card_indices:
-            initial_hand_size = len(player.hand)
-            with patch.object(game, 'get_play', return_value={valid_card_indices[0]}):
-                game.next_turn()
-            
-            assert len(player.hand) == initial_hand_size - 1
-            assert game.winning_player_idx == 1
+        initial_hand_size = len(player.hand)
+        with patch.object(game, 'get_play', return_value={valid_card_indices[0]}):
+            game.next_turn()
+        
+        assert len(player.hand) == initial_hand_size - 1
+        assert game.winning_player_idx == 1
 
     def test_play_lower_card_raises_error(self):
         """Test that playing a lower card than current combination raises error."""
@@ -185,10 +184,10 @@ class TestNextTurnPlayCard:
         # Find a card with value < 13
         valid_card_indices = [i for i, card in enumerate(player.hand) if card.value < 13]
         
-        if valid_card_indices:
-            with patch.object(game, 'get_play', return_value={valid_card_indices[0]}):
-                with pytest.raises(InvalidPlayError):
-                    game.next_turn()
+        assert valid_card_indices
+        with patch.object(game, 'get_play', return_value={valid_card_indices[0]}):
+            with pytest.raises(InvalidPlayError):
+                game.next_turn()
 
     def test_play_non_matching_combination_type_raises_error(self):
         """Test that playing non-matching combination type raises error."""
@@ -211,6 +210,26 @@ class TestNextTurnPlayCard:
                 with pytest.raises(InvalidPlayError):
                     game.next_turn()
 
+    def test_bomb_can_always_be_played_over_non_bombs(self):
+        """Test that a bomb can be played over any non-bomb combination."""
+        output = StringIO()
+        game = Tichu(seed=42, output=output)
+        game.start_new_round()
+        
+        # Set up initial pair combination
+        game.current_player_idx = 1
+        game.winning_player_idx = 0
+        game.current_combination = MagicMock()
+        game.current_combination.combination_type = CombinationType.PAIR
+        game.current_combination.value = 14
+        game.current_combination.length = 2
+        
+        player = game.current_player
+        player.hand = [Card(Color.RED, 9), Card(Color.BLUE, 9), Card(Color.GREEN, 9), Card(Color.YELLOW, 9)]
+        with patch.object(game, 'get_play', return_value={0, 1, 2, 3}):
+            game.next_turn()
+            game.winning_player_idx = 1
+            game.current_combination.type = CombinationType.BOMB
 
 class TestNextTurnSpecialCards:
     """Tests for special card handling in next_turn."""
@@ -453,8 +472,8 @@ class TestEndRoundScoring:
         # Team 1 should lose 100 for failed Tichu
         assert game.scores[1] <= initial_team_score - 100
 
-    def test_card_scoring_from_losing_player(self):
-        """Test that losing player's hand cards are scored."""
+    def test_card_scoring_from_opposing_player(self):
+        """Test that opposing player's hand cards are scored."""
         output = StringIO()
         game = Tichu(seed=42, output=output)
         game.start_new_round()
@@ -468,6 +487,24 @@ class TestEndRoundScoring:
         
         # Score from player 3's remaining hand should be added to team 0
         assert game.scores[0] == initial_team_score + hand_score
+
+    def test_card_scoring_from_losing_player(self):
+        """Test that losing player's hand cards are scored."""
+        output = StringIO()
+        game = Tichu(seed=42, output=output)
+        game.start_new_round()
+        
+        # Set up rankings
+        game.player_rankings = [0, 1, 2]
+        game.players[3].hand = [Card(Color.RED, 3), Card(Color.GREEN, 4)]
+        game.players[3].card_stack = [Card(Color.RED, 5), Card(Color.GREEN, 10), Card(Color.SPECIAL, SpecialCard.DRAGON.value)]
+        stack_score = Card.count_card_scores(game.players[3].card_stack)
+        initial_team_score = game.scores[0]
+        
+        game.end_round_scoring()
+        
+        # Score from player 3's remaining hand should be added to team 0
+        assert game.scores[0] == initial_team_score + stack_score 
 
     def test_card_stack_scoring(self):
         """Test that card stacks are scored properly."""
@@ -484,10 +521,11 @@ class TestEndRoundScoring:
         game.players[3].hand = [Card(Color.RED, 3), Card(Color.GREEN, 4)]
         
         initial_team_score = game.scores[0]
+        card_score = Card.count_card_scores(test_cards)
         game.end_round_scoring()
         
         # Score should include card stack
-        assert game.scores[0] == initial_team_score + 15
+        assert game.scores[0] == initial_team_score + card_score 
 
     def test_multiple_player_tichu_calls(self):
         """Test scoring when multiple players called Tichu."""

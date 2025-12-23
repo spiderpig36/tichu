@@ -1,6 +1,5 @@
 from enum import Enum
-
-from .card import Card, SpecialCard
+from .card import Card, Color, SpecialCard
 
 class CombinationType(Enum):
     SINGLE = 0
@@ -12,12 +11,12 @@ class CombinationType(Enum):
     BOMB = 6
     STRAIGHT_BOMB = 7
 
-    def get_bomb_strength(self):
+    def get_bomb_strength(self, length: int) -> int:
         match self:
             case CombinationType.BOMB:
                 return 1
             case CombinationType.STRAIGHT_BOMB:
-                return 2
+                return 2 + length
             case _:
                 return 0
 
@@ -47,30 +46,50 @@ class Combination():
                     if cards[-2].value == 14:
                         return cls(CombinationType.STRAIGHT, cards[-2].value, len(cards))
                     return cls(CombinationType.STRAIGHT, cards[-2].value + 1, len(cards))
-        if len(cards) >= 4 and len(cards) % 2 == 0:
-            card_count: dict[int, int] = {}
-            for card in cards:
+        card_count: dict[int, int] = {}
+        for card in cards:
+            if card.color != Color.SPECIAL:
                 card_count[card.value] = card_count.get(card.value, 0) + 1
-            if any([card for card in cards if card.value == SpecialCard.PHOENIX.value]):
-                del card_count[SpecialCard.PHOENIX.value]
-                to_add = next((key for key, val in card_count.items() if val == 1), -1)
-                if to_add != -1:
-                    card_count[to_add] += 1
+        if len(cards) >= 4 and len(cards) % 2 == 0:
             straight_values = sorted(card_count.keys())
-            if all(val == 2 for val in card_count.values()) and straight_values[-1] - straight_values[0] == len(card_count) - 1:
+            if (all(val == 2 for val in card_count.values()) or (len([val for val in card_count.values() if val == 2]) == len(card_count) - 1 and len([val for val in card_count.values() if val == 1]) == 1 and any([card for card in cards if card.value == SpecialCard.PHOENIX.value]))) and straight_values[-1] - straight_values[0] == len(card_count) - 1:
                 return cls(CombinationType.STAIR, max(card_count.keys()), len(cards) // 2)
         if len(cards) == 5:
-            card_count = {}
-            for card in cards:
-                card_count[card.value] = card_count.get(card.value, 0) + 1
-            if any([card for card in cards if card.value == SpecialCard.PHOENIX.value]):
-                del card_count[SpecialCard.PHOENIX.value]
-                to_add = next((key for key, val in sorted(card_count.items(), key=lambda item: item[0], reverse=True) if val == 2), -1)
-                if to_add != -1:
-                    card_count[to_add] += 1
-            if sorted(card_count.values()) == [2, 3]:
-                return cls(CombinationType.FULL_HOUSE, next(key for key, val in card_count.items() if val == 3))
+            if sorted(card_count.values()) == [2, 3] or (any([card for card in cards if card.value == SpecialCard.PHOENIX.value]) and (sorted(card_count.values()) == [1, 3] or sorted(card_count.values()) == [2, 2])):
+                return cls(CombinationType.FULL_HOUSE, next((key for key, val in card_count.items() if val == 3), sorted(card_count.keys())[-1]))
         return None
+
+    def can_be_played_on(self, other: Combination) -> bool:
+        return (other.combination_type == self.combination_type and other.length == self.length and self.value > other.value) or self.combination_type.get_bomb_strength(other.length) > other.combination_type.get_bomb_strength(self.length)
+    
+    @staticmethod
+    def can_fulfill_wish(combination: Combination, wish_value: int, cards: list[Card]) -> bool:
+        card_count: dict[int, int] = {}
+        for card in cards:
+            card_count[card.value] = card_count.get(card.value, 0) + 1
+        next_combination = None
+        match combination.combination_type:
+            case CombinationType.SINGLE:
+                if wish_value in card_count:
+                    next_combination = Combination.from_cards([card for card in cards if card.value == wish_value])
+            case CombinationType.PAIR:
+                if card_count.get(wish_value, 0) >= 2 or (card_count.get(wish_value, 0) == 1 and card_count.get(SpecialCard.PHOENIX.value, 0) >= 1):
+                    next_combination = Combination.from_cards([card for card in cards if card.value == wish_value])
+            case CombinationType.TRIPLE:
+                if card_count.get(wish_value, 0) >= 3 or (card_count.get(wish_value, 0) == 2 and card_count.get(SpecialCard.PHOENIX.value, 0) >= 1):
+                    next_combination = Combination.from_cards([card for card in cards if card.value == wish_value])
+            case CombinationType.BOMB:
+                if card_count.get(wish_value, 0) == 4:
+                    next_combination = Combination.from_cards([card for card in cards if card.value == wish_value])
+            case CombinationType.STRAIGHT:
+                pass
+            case CombinationType.FULL_HOUSE:
+                pass
+            case CombinationType.STAIR:
+                pass
+            case CombinationType.STRAIGHT_BOMB:
+                pass
+        return next_combination is not None and next_combination.can_be_played_on(combination)
 
     def __init__(self, combination_type: CombinationType, value: int, length: int = 1):
         self.combination_type = combination_type

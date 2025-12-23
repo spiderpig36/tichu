@@ -155,6 +155,8 @@ class Tichu:
             current_hand = self.current_player.hand
             play = self.get_play() 
             if play == "pass":
+                if self.current_wish is not None and Combination.can_fulfill_wish(self.current_combination, self.current_wish, current_hand):
+                    raise InvalidPlayError(f"You can fulfill the wish for card value {self.current_wish} and cannot pass.")
                 self.output_manager.write(f"{self.current_player.name} has passed.")
                 self.current_player.has_passed = True
                 if all(player.has_passed for player in self.players if player != self.winning_player):
@@ -186,19 +188,20 @@ class Tichu:
                 return
             else:
                 try:
-                    played_cards = [card for i, card in enumerate(current_hand) if i in play]
+                    played_cards = [current_hand[idx] for idx in play]
                 except IndexError:
                     raise InvalidPlayError("One or more card indices are out of range.")
 
                 next_combination = Combination.from_cards(played_cards)
-                if next_combination is None:
-                    raise InvalidPlayError("No valid combination could be formed with the played cards.")
-                if self.current_combination is not None:
-                    if (next_combination.combination_type == self.current_combination.combination_type or next_combination.combination_type.get_bomb_strength() > self.current_combination.combination_type.get_bomb_strength()) and next_combination.length == self.current_combination.length:
-                        if next_combination.value <= self.current_combination.value:
-                            raise InvalidPlayError("Played combination must be higher than the current combination.")
-                    else:
-                        raise InvalidPlayError("Played combination must match the current combination type with the same length.")
+                if self.current_combination is not None and not next_combination.can_be_played_on(self.current_combination):
+                    raise InvalidPlayError("Played combination must be of the same kind as the current combination and higher than the current combination.")
+                if self.current_wish is not None:
+                    if self.current_wish in [card.value for card in played_cards]:
+                        self.output_manager.write(f"{self.current_player.name} has fulfilled the wish for card value {self.current_wish}.")
+                        self.current_wish = None
+                    elif any(self.current_wish in [card.value for card in self.current_player.hand]):
+                        if Combination.can_fulfill_wish(next_combination, self.current_wish):
+                            raise InvalidPlayError(f"The played combination does not fulfill the wish for card value {self.current_wish}.")
             
                 self.current_combination = next_combination
                 self.winning_player_idx = self.current_player_idx
@@ -217,7 +220,7 @@ class Tichu:
                     self.current_player_idx = (self.current_player_idx + 2) % NUM_PLAYERS
                     return
                 if self.current_combination.combination_type == CombinationType.SINGLE and self.current_combination.value == SpecialCard.PHOENIX.value:
-                    self.current_combination.value = self.card_stack[-2] + 1 if len(self.card_stack) > 1 else NORMAL_CARD_VALUES[0]
+                    self.current_combination.value = self.card_stack[-2] + 0.5 if len(self.card_stack) > 1 else NORMAL_CARD_VALUES[0]
                 if self.current_combination.combination_type == CombinationType.SINGLE and self.current_combination.value == SpecialCard.MAH_JONG.value:
                     self.current_wish = self.get_mahjong_wish()
                     self.output_manager.write(f"{self.current_player.name} wishes for card value {self.current_wish}.")
@@ -225,25 +228,25 @@ class Tichu:
         self.current_player_idx = (self.current_player_idx + 1) % NUM_PLAYERS
 
     def end_round_scoring(self):
+        team_scores = [0, 0]
+        for i, player in enumerate(self.players):
+            if player.tichu_called:
+                if self.player_rankings[0] == i:
+                    team_scores[i % 2] += 100
+                else:
+                    team_scores[i % 2] -= 100
         if len(self.player_rankings) == 2 and self.player_rankings[0] % 2 == self.player_rankings[1] % 2:
-            self.scores[self.player_rankings[0] % 2] += 200
+            team_scores[self.player_rankings[0] % 2] += 200
         else:
-            team_scores = [0, 0]
-            for i, player in enumerate(self.players):
-                if player.tichu_called:
-                    if self.player_rankings[0] == i:
-                        team_scores[i % 2] += 100
-                    else:
-                        team_scores[i % 2] -= 100
             loosing_player = next(i for i in range(NUM_PLAYERS) if i not in self.player_rankings)
             self.players[self.player_rankings[0]].card_stack.extend(self.players[loosing_player].card_stack)
             team_scores[(loosing_player + 1) % 2] += Card.count_card_scores(self.players[loosing_player].hand)
             for i, player in enumerate(self.players):
                 team_id = i % 2 
                 team_scores[team_id] += Card.count_card_scores(player.card_stack) 
-            for i in range(len(team_scores)):
-                self.scores[i] += team_scores[i]
-                self.output_manager.write(f"Team {i} scored {team_scores[i]} points this round. Total score: {self.scores[i]}")
+        for i in range(len(team_scores)):
+            self.scores[i] += team_scores[i]
+            self.output_manager.write(f"Team {i} scored {team_scores[i]} points this round. Total score: {self.scores[i]}")
 
 
 if __name__ == "__main__":
