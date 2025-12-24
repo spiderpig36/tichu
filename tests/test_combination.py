@@ -259,6 +259,27 @@ def test_valid_combinations(cards, expected_type, expected_value, expected_lengt
             Card(Color.RED, 7),
         ],
         [
+            Card(Color.GREEN, 4),
+            Card(Color.YELLOW, 5),
+            Card(Color.YELLOW, 5),
+            Card(Color.BLUE, 5),
+            Card(Color.RED, 8),
+        ],
+        [
+            Card(Color.GREEN, 4),
+            Card(Color.YELLOW, 5),
+            Card(Color.YELLOW, 5),
+            Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+            Card(Color.RED, 8),
+        ],
+        [
+            Card(Color.GREEN, 4),
+            Card(Color.GREEN, 4),
+            Card(Color.GREEN, 5),
+            Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+            Card(Color.RED, 6),
+        ],
+        [
             Card(Color.RED, 13),
             Card(Color.GREEN, 13),
             Card(Color.YELLOW, 13),
