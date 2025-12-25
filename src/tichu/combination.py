@@ -60,7 +60,7 @@ class Combination:
                 return cls(
                     CombinationType.STAIR, max(card_count.keys()), len(cards) // 2
                 )
-        if len(straight_values) >= 4:
+        if len(straight_values) >= 4 and all(val == 1 for val in card_count.values()):
             if (
                 straight_values[-1] - straight_values[0] == len(straight_values) - 1
                 and len(straight_values) >= 5
@@ -85,7 +85,7 @@ class Combination:
                     )
         if len(cards) == 5:
             if sorted(card_count.values()) == [2, 3] or (
-                SpecialCard.PHOENIX.value in [card.value for card in cards]
+                has_phoenix
                 and (
                     sorted(card_count.values()) == [1, 3]
                     or sorted(card_count.values()) == [2, 2]
