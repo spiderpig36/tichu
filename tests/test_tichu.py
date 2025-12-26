@@ -223,10 +223,10 @@ class TestNextTurnPlayCard:
 
         player = game.current_player
         player.hand = [
-            Card(Color.RED, 9),
-            Card(Color.BLUE, 9),
-            Card(Color.GREEN, 9),
-            Card(Color.YELLOW, 9),
+            Card(Color.JADE, 9),
+            Card(Color.PAGODE, 9),
+            Card(Color.SWORD, 9),
+            Card(Color.STAR, 9),
         ]
         with patch.object(game, "get_play", return_value={0, 1, 2, 3}):
             game.next_turn()
@@ -315,7 +315,7 @@ class TestNextTurnWish:
         game.current_combination.length = 1
 
         game.current_player_idx = 1
-        game.current_player.hand = [Card(Color.BLUE, 14)]
+        game.current_player.hand = [Card(Color.PAGODE, 14)]
 
         with patch.object(game, "get_play", return_value={0}):
             game.next_turn()
@@ -331,11 +331,11 @@ class TestNextTurnWish:
 
         game.current_player_idx = 1
         game.current_player.hand = [
-            Card(Color.BLUE, 14),
-            Card(Color.BLUE, 2),
-            Card(Color.GREEN, 2),
-            Card(Color.YELLOW, 2),
-            Card(Color.RED, 2),
+            Card(Color.PAGODE, 14),
+            Card(Color.PAGODE, 2),
+            Card(Color.SWORD, 2),
+            Card(Color.STAR, 2),
+            Card(Color.JADE, 2),
         ]
 
         with patch.object(game, "get_play", return_value={0}):
@@ -468,7 +468,7 @@ class TestEndRoundScoring:
         # Player 0 called Tichu and finished first
         game.players[0].tichu_called = True
         game.player_rankings = [0, 1, 2]
-        game.players[3].hand = [Card(Color.RED, 3), Card(Color.GREEN, 4)]
+        game.players[3].hand = [Card(Color.JADE, 3), Card(Color.SWORD, 4)]
         initial_team_score = game.scores[0]
 
         game.end_round_scoring()
@@ -482,7 +482,7 @@ class TestEndRoundScoring:
 
         game.players[0].grand_tichu_called = True
         game.player_rankings = [0, 1, 2]
-        game.players[3].hand = [Card(Color.RED, 3), Card(Color.GREEN, 4)]
+        game.players[3].hand = [Card(Color.JADE, 3), Card(Color.SWORD, 4)]
         initial_team_score = game.scores[0]
 
         game.end_round_scoring()
@@ -521,10 +521,10 @@ class TestEndRoundScoring:
 
         # Set up rankings
         game.player_rankings = [0, 1, 2]
-        game.players[3].hand = [Card(Color.RED, 3), Card(Color.GREEN, 4)]
+        game.players[3].hand = [Card(Color.JADE, 3), Card(Color.SWORD, 4)]
         game.players[3].card_stack = [
-            Card(Color.RED, 5),
-            Card(Color.GREEN, 10),
+            Card(Color.JADE, 5),
+            Card(Color.SWORD, 10),
             Card(Color.SPECIAL, SpecialCard.DRAGON.value),
         ]
         stack_score = Card.count_card_scores(game.players[3].card_stack)
@@ -542,9 +542,9 @@ class TestEndRoundScoring:
         game.player_rankings = [0, 1, 2]
 
         # Add some cards to winner's stack
-        test_cards = [Card(Color.BLUE, 5), Card(Color.RED, 10)]
+        test_cards = [Card(Color.PAGODE, 5), Card(Color.JADE, 10)]
         game.players[0].card_stack.extend(test_cards)
-        game.players[3].hand = [Card(Color.RED, 3), Card(Color.GREEN, 4)]
+        game.players[3].hand = [Card(Color.JADE, 3), Card(Color.SWORD, 4)]
 
         initial_team_score = game.scores[0]
         card_score = Card.count_card_scores(test_cards)
@@ -561,7 +561,7 @@ class TestEndRoundScoring:
         # Player 1 (team 1) called Tichu but didn't finish
         game.players[1].tichu_called = True
         game.player_rankings = [0, 2, 3]
-        game.players[1].hand = [Card(Color.RED, 3), Card(Color.GREEN, 4)]
+        game.players[1].hand = [Card(Color.JADE, 3), Card(Color.SWORD, 4)]
 
         initial_team_0_score = game.scores[0]
         initial_team_1_score = game.scores[1]
