@@ -66,7 +66,11 @@ class Tichu:
 
         self.random.shuffle(deck)
         for i, card in enumerate(deck):
-            self.players[i % NUM_PLAYERS].add_card(card)
+            player = self.players[i % NUM_PLAYERS]
+            player.add_card(card)
+            if len(player.hand) == 8 and self.get_grand_tichu() == "grand_tichu":
+                player.grand_tichu_called = True
+
         for player in self.players:
             player.hand.sort(key=lambda c: c.value)
 
@@ -91,7 +95,7 @@ class Tichu:
 
     def get_play(self) -> set[int] | Literal["pass"] | Literal["tichu"]:
         prompt = input(
-            "Enter the index of the card to play separated by a comma or 'pass': "
+            "Enter the index of the card to play separated by a comma, 'pass' or 'tichu': "
         )
         if prompt.lower() == "pass":
             return "pass"
@@ -105,6 +109,17 @@ class Tichu:
                 "Invalid input. Please enter valid card indices separated by commas. Try again."
             )
             return self.get_play()
+
+    def get_grand_tichu(self) -> Literal["pass"] | Literal["grand_tichu"]:
+        prompt = input("Enter 'grand_tichu' to call a grand tichu or 'pass': ").lower()
+        if prompt == "pass":
+            return "pass"
+        if prompt == "grand_tichu":
+            return "grand_tichu"
+        self.output_manager.write(
+            "Invalid input. Please enter 'pass' or 'grand_tichue'. Try again."
+        )
+        return self.get_grand_tichu()
 
     def get_dragon_stack_recipient(self) -> int:
         recipient = input(
@@ -240,6 +255,8 @@ class Tichu:
                     self.current_player_idx = self.winning_player_idx
                     return
             elif play == "tichu":
+                if self.current_player.grand_tichu_called:
+                    raise InvalidPlayError("Grand Tichu was already called.")
                 if len(self.current_player.hand) != 14:
                     raise InvalidPlayError(
                         "Tichu can only be called at the start of a turn with a full hand."
@@ -333,11 +350,11 @@ class Tichu:
     def end_round_scoring(self):
         team_scores = [0, 0]
         for i, player in enumerate(self.players):
-            if player.tichu_called:
+            if player.tichu_called or player.grand_tichu_called:
                 if self.player_rankings[0] == i:
-                    team_scores[i % 2] += 100
+                    team_scores[i % 2] += 200 if player.grand_tichu_called else 100
                 else:
-                    team_scores[i % 2] -= 100
+                    team_scores[i % 2] -= 200 if player.grand_tichu_called else 100
         if (
             len(self.player_rankings) == 2
             and self.player_rankings[0] % 2 == self.player_rankings[1] % 2

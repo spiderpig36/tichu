@@ -14,6 +14,7 @@ class Player:
         self.card_stack.clear()
         self.has_passed = False
         self.tichu_called = False
+        self.grand_tichu_called = False
 
     def add_card(self, card):
         """Add a card to the player's hand."""
@@ -28,8 +29,14 @@ class Player:
 
     def has_mahjong(self):
         """Check if the player has the Mah Jong card."""
-        return any([card for card in self.hand if card.color == Color.SPECIAL and card.value == 1])
+        return any(
+            [
+                card
+                for card in self.hand
+                if card.color == Color.SPECIAL and card.value == 1
+            ]
+        )
 
     def __str__(self):
-        hand = '\n  '.join([''] + [f"{i}: {card}" for i, card in enumerate(self.hand)])
+        hand = "\n  ".join([""] + [f"{i}: {card}" for i, card in enumerate(self.hand)])
         return f"Player {self.name} with hand: {hand}"

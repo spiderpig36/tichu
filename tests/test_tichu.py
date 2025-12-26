@@ -7,14 +7,35 @@ from tichu.card import Card, Color, SpecialCard
 from tichu.combination import CombinationType
 
 
+@pytest.fixture
+def game():
+    """Create a game instance and start a new round."""
+    output = StringIO()
+    game_instance = Tichu(seed=42, output=output)
+    with patch.object(game_instance, "get_grand_tichu", return_value="pass"):
+        game_instance.start_new_round()
+    return game_instance
+
+
+class TestStartNewRound:
+    def test_grand_tichu_called(self):
+        output = StringIO()
+        game = Tichu(seed=42, output=output)
+        with patch.object(game, "get_grand_tichu") as mock_grand_tichu:
+            mock_grand_tichu.side_effect = ["grand_tichu", "pass", "pass", "pass"]
+            game.start_new_round()
+
+        assert game.players[0].grand_tichu_called == True
+        assert game.players[1].grand_tichu_called == False
+        assert game.players[2].grand_tichu_called == False
+        assert game.players[3].grand_tichu_called == False
+
+
 class TestNextTurnPass:
     """Tests for player passing in next_turn."""
 
-    def test_player_passes_single_card(self):
+    def test_player_passes_single_card(self, game):
         """Test a player passing during their turn."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Set up initial state
         game.current_player_idx = 0
@@ -28,11 +49,8 @@ class TestNextTurnPass:
         # Current player should advance to next player
         assert game.current_player_idx == (initial_player_id + 1) % NUM_PLAYERS
 
-    def test_all_players_pass_resets_combination(self):
+    def test_all_players_pass_resets_combination(self, game):
         """Test that when all players except winner pass, combination resets."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Set up game state
         game.current_player_idx = 1
@@ -58,11 +76,8 @@ class TestNextTurnPass:
 class TestNextTurnTichu:
     """Tests for Tichu call in next_turn."""
 
-    def test_tichu_call_with_full_hand(self):
+    def test_tichu_call_with_full_hand(self, game):
         """Test that Tichu can be called with a full hand of 14 cards."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         player = game.current_player
         initial_hand_size = len(player.hand)
@@ -75,11 +90,8 @@ class TestNextTurnTichu:
         # Hand size shouldn't change
         assert len(player.hand) == initial_hand_size
 
-    def test_tichu_call_without_full_hand_raises_error(self):
+    def test_tichu_call_without_full_hand_raises_error(self, game):
         """Test that Tichu cannot be called without a full hand."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         player = game.current_player
         # Remove a card to make hand size != 14
@@ -93,11 +105,8 @@ class TestNextTurnTichu:
 class TestNextTurnPlayCard:
     """Tests for playing cards in next_turn."""
 
-    def test_play_single_card(self):
+    def test_play_single_card(self, game):
         """Test playing a single card."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         game.current_player_idx = 0
         player = game.current_player
@@ -115,11 +124,8 @@ class TestNextTurnPlayCard:
         # Winning player should be updated
         assert game.winning_player_idx == 0
 
-    def test_play_pair(self):
+    def test_play_pair(self, game):
         """Test playing a pair of cards."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         player = game.current_player
         # Find a pair in the hand
@@ -143,11 +149,8 @@ class TestNextTurnPlayCard:
         assert len(player.hand) == initial_hand_size - 2
         assert game.current_combination.combination_type == CombinationType.PAIR
 
-    def test_play_higher_card_after_single(self):
+    def test_play_higher_card_after_single(self, game):
         """Test playing a higher single card than current combination."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Set up initial combination
         game.current_player_idx = 1
@@ -168,11 +171,8 @@ class TestNextTurnPlayCard:
         assert len(player.hand) == initial_hand_size - 1
         assert game.winning_player_idx == 1
 
-    def test_play_lower_card_raises_error(self):
+    def test_play_lower_card_raises_error(self, game):
         """Test that playing a lower card than current combination raises error."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Set up initial combination with high value
         game.current_player_idx = 1
@@ -193,11 +193,8 @@ class TestNextTurnPlayCard:
             with pytest.raises(InvalidPlayError):
                 game.next_turn()
 
-    def test_play_non_matching_combination_type_raises_error(self):
+    def test_play_non_matching_combination_type_raises_error(self, game):
         """Test that playing non-matching combination type raises error."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Set up initial pair combination
         game.current_player_idx = 1
@@ -213,11 +210,8 @@ class TestNextTurnPlayCard:
             with pytest.raises(InvalidPlayError):
                 game.next_turn()
 
-    def test_bomb_can_always_be_played_over_non_bombs(self):
+    def test_bomb_can_always_be_played_over_non_bombs(self, game):
         """Test that a bomb can be played over any non-bomb combination."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Set up initial pair combination
         game.current_player_idx = 1
@@ -243,11 +237,8 @@ class TestNextTurnPlayCard:
 class TestNextTurnSpecialCards:
     """Tests for special card handling in next_turn."""
 
-    def test_play_dog_passes_turn_to_teammate(self):
+    def test_play_dog_passes_turn_to_teammate(self, game):
         """Test that playing dog passes turn to teammate."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Replace current player's first card with dog
         game.current_player_idx = 0
@@ -259,11 +250,8 @@ class TestNextTurnSpecialCards:
         # Next player should be teammate (2 positions ahead)
         assert game.current_player_idx == 2
 
-    def test_play_phoenix_updates_combination_value(self):
+    def test_play_phoenix_updates_combination_value(self, game):
         """Test that playing Phoenix updates combination value."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         game.current_player_idx = 0
         # Replace first card with Phoenix
@@ -276,11 +264,8 @@ class TestNextTurnSpecialCards:
         assert game.current_combination is not None
         assert game.current_combination.combination_type == CombinationType.SINGLE
 
-    def test_play_mahjong_prompts_for_wish(self):
+    def test_play_mahjong_prompts_for_wish(self, game):
         """Test that playing Mah Jong prompts for wish value."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         game.current_player_idx = 0
         # Replace first card with Mah Jong
@@ -294,11 +279,8 @@ class TestNextTurnSpecialCards:
         # Current wish should be set
         assert game.current_wish == 7
 
-    def test_play_dragon_triggers_stack_selection(self):
+    def test_play_dragon_triggers_stack_selection(self, game):
         """Test that playing dragon and winning triggers stack recipient selection."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         game.current_player_idx = 3
         game.winning_player_idx = 3
@@ -323,11 +305,8 @@ class TestNextTurnSpecialCards:
 
 
 class TestNextTurnWish:
-    def test_player_can_play_card_if_wish_is_not_possible(self):
+    def test_player_can_play_card_if_wish_is_not_possible(self, game):
         """Test that a player with no cards is skipped."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         game.current_wish = 2
         game.current_combination = MagicMock()
@@ -341,11 +320,8 @@ class TestNextTurnWish:
         with patch.object(game, "get_play", return_value={0}):
             game.next_turn()
 
-    def test_player_can_not_play_card_if_wish_is_possible(self):
+    def test_player_can_not_play_card_if_wish_is_possible(self, game):
         """Test that a player with no cards is skipped."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         game.current_wish = 2
         game.current_combination = MagicMock()
@@ -370,11 +346,8 @@ class TestNextTurnWish:
 class TestNextTurnEdgeCases:
     """Tests for edge cases in next_turn."""
 
-    def test_player_with_no_cards_is_skipped(self):
+    def test_player_with_no_cards_is_skipped(self, game):
         """Test that a player with no cards is skipped."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         game.current_player_idx = 0
         game.player_rankings = [0]
@@ -385,11 +358,8 @@ class TestNextTurnEdgeCases:
         # Should advance to next player
         assert game.current_player_idx == (initial_player_id + 1) % NUM_PLAYERS
 
-    def test_invalid_card_index_raises_error(self):
+    def test_invalid_card_index_raises_error(self, game):
         """Test that invalid card index raises error."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         game.current_player_idx = 0
         hand_size = len(game.current_player.hand)
@@ -400,11 +370,8 @@ class TestNextTurnEdgeCases:
             with pytest.raises(InvalidPlayError):
                 game.next_turn()
 
-    def test_turn_advances_to_next_player(self):
+    def test_turn_advances_to_next_player(self, game):
         """Test that turn advances to next player after valid play."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         initial_player_id = game.current_player_idx
 
@@ -418,7 +385,8 @@ class TestNextTurnEdgeCases:
         """Test that games with same seed produce same hand distributions."""
         output1 = StringIO()
         game1 = Tichu(seed=123, output=output1)
-        game1.start_new_round()
+        with patch.object(game1, "get_grand_tichu", return_value="pass"):
+            game1.start_new_round()
         hands1 = [
             [(card.color, card.value) for card in player.hand]
             for player in game1.players
@@ -426,7 +394,8 @@ class TestNextTurnEdgeCases:
 
         output2 = StringIO()
         game2 = Tichu(seed=123, output=output2)
-        game2.start_new_round()
+        with patch.object(game2, "get_grand_tichu", return_value="pass"):
+            game2.start_new_round()
         hands2 = [
             [(card.color, card.value) for card in player.hand]
             for player in game2.players
@@ -439,11 +408,8 @@ class TestNextTurnEdgeCases:
 class TestNextTurnGameFlow:
     """Tests for overall game flow in next_turn."""
 
-    def test_card_stack_accumulates(self):
+    def test_card_stack_accumulates(self, game):
         """Test that played cards accumulate in card stack."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         game.current_player_idx = 0
         initial_stack_size = len(game.card_stack)
@@ -454,11 +420,8 @@ class TestNextTurnGameFlow:
         # Card stack should have increased
         assert len(game.card_stack) > initial_stack_size
 
-    def test_winning_player_is_updated(self):
+    def test_winning_player_is_updated(self, game):
         """Test that winning player is updated when cards are played."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         game.current_player_idx = 1
         game.winning_player_idx = None
@@ -469,11 +432,8 @@ class TestNextTurnGameFlow:
         # Winning player should be updated to current player
         assert game.winning_player_idx == 1
 
-    def test_current_combination_is_set(self):
+    def test_current_combination_is_set(self, game):
         """Test that current combination is set after valid play."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         assert game.current_combination is None
 
@@ -488,11 +448,8 @@ class TestNextTurnGameFlow:
 class TestEndRoundScoring:
     """Tests for end_round_scoring function."""
 
-    def test_same_team_finish_first_and_second_bonus(self):
+    def test_same_team_finish_first_and_second_bonus(self, game):
         """Test that both players from same team finishing first and second grants 200 points."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Team 0 (players 0 and 2) finish first and second
         game.player_rankings = [0, 2]
@@ -505,11 +462,8 @@ class TestEndRoundScoring:
         # Team 1 score should be unchanged
         assert game.scores[1] == 0
 
-    def test_tichu_bonus_first_place(self):
+    def test_tichu_bonus_first_place(self, game):
         """Test that Tichu called and finishing first grants 100 point bonus."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Player 0 called Tichu and finished first
         game.players[0].tichu_called = True
@@ -522,11 +476,22 @@ class TestEndRoundScoring:
         # Team 0 should gain 100 for Tichu bonus
         assert game.scores[0] == initial_team_score + 100
 
-    def test_tichu_penalty_not_first_place(self):
+    def test_grand_tichu_bonus_first_place(self, game):
+        """Test that Tichu called and finishing first grants 100 point bonus."""
+        # Player 0 called Tichu and finished first
+
+        game.players[0].grand_tichu_called = True
+        game.player_rankings = [0, 1, 2]
+        game.players[3].hand = [Card(Color.RED, 3), Card(Color.GREEN, 4)]
+        initial_team_score = game.scores[0]
+
+        game.end_round_scoring()
+
+        # Team 0 should gain 100 for Tichu bonus
+        assert game.scores[0] == initial_team_score + 200
+
+    def test_tichu_penalty_not_first_place(self, game):
         """Test that Tichu called but not finishing first incurs 100 point penalty."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Player 1 called Tichu but didn't finish first
         game.players[1].tichu_called = True
@@ -538,11 +503,8 @@ class TestEndRoundScoring:
         # Team 1 should lose 100 for failed Tichu
         assert game.scores[1] <= initial_team_score - 100
 
-    def test_card_scoring_from_opposing_player(self):
+    def test_card_scoring_from_opposing_player(self, game):
         """Test that opposing player's hand cards are scored."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Set up rankings
         game.player_rankings = [0, 1, 2]
@@ -554,11 +516,8 @@ class TestEndRoundScoring:
         # Score from player 3's remaining hand should be added to team 0
         assert game.scores[0] == initial_team_score + hand_score
 
-    def test_card_scoring_from_losing_player(self):
+    def test_card_scoring_from_losing_player(self, game):
         """Test that losing player's hand cards are scored."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Set up rankings
         game.player_rankings = [0, 1, 2]
@@ -576,11 +535,8 @@ class TestEndRoundScoring:
         # Score from player 3's remaining hand should be added to team 0
         assert game.scores[0] == initial_team_score + stack_score
 
-    def test_card_stack_scoring(self):
+    def test_card_stack_scoring(self, game):
         """Test that card stacks are scored properly."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Set up game state
         game.player_rankings = [0, 1, 2]
@@ -597,11 +553,8 @@ class TestEndRoundScoring:
         # Score should include card stack
         assert game.scores[0] == initial_team_score + card_score
 
-    def test_multiple_player_tichu_calls(self):
+    def test_multiple_player_tichu_calls(self, game):
         """Test scoring when multiple players called Tichu."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Player 0 (team 0) called Tichu and finished first
         game.players[0].tichu_called = True
@@ -620,30 +573,24 @@ class TestEndRoundScoring:
         # Team 1 loses 100 for failed Tichu
         assert game.scores[1] == initial_team_1_score - 100
 
-    def test_score_accumulation_across_rounds(self):
+    def test_score_accumulation_across_rounds(self, game):
         """Test that scores accumulate across multiple calls to end_round_scoring."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
-
         # First round
         game.player_rankings = [0, 2]
         game.end_round_scoring()
         first_round_team_0_score = game.scores[0]
 
         # Reset for second round
-        game.start_new_round()
+        with patch.object(game, "get_grand_tichu", return_value="pass"):
+            game.start_new_round()
         game.player_rankings = [1, 3]
         game.end_round_scoring()
 
         # Scores should accumulate
         assert game.scores[0] == first_round_team_0_score or game.scores[1] > 0
 
-    def test_all_players_ranked(self):
+    def test_all_players_ranked(self, game):
         """Test scoring when all players are ranked (3 finished, 1 remaining)."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         game.player_rankings = [0, 1, 2]
         # Player 3 is the remaining player with cards
@@ -655,11 +602,8 @@ class TestEndRoundScoring:
         assert game.scores[0] >= 0
         assert game.scores[1] >= 0
 
-    def test_dragon_card_in_stack_scores(self):
+    def test_dragon_card_in_stack_scores(self, game):
         """Test that dragon card in card stack is properly scored."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         game.player_rankings = [0, 1, 2]
 
@@ -677,11 +621,8 @@ class TestEndRoundScoring:
 class TestPushCards:
     """Tests for push_cards function."""
 
-    def test_pushed_cards_in_someone_elses_hand(self):
+    def test_pushed_cards_in_someone_elses_hand(self, game):
         """Test that pushed cards are in someone else's hand."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         original_hand_size = len(game.players[0].hand)
 
@@ -691,11 +632,8 @@ class TestPushCards:
         for player in game.players:
             assert len(player.hand) == original_hand_size
 
-    def test_pushed_cards_are_valid_cards(self):
+    def test_pushed_cards_are_valid_cards(self, game):
         """Test that pushed cards are actual cards from the hand."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Save original hands
         original_hands = [player.hand.copy() for player in game.players]
@@ -715,11 +653,8 @@ class TestPushCards:
         # Same number of cards
         assert len(all_cards_before) == len(all_cards_after)
 
-    def test_push_rotation_player_0_to_3(self):
+    def test_push_rotation_player_0_to_3(self, game):
         """Test push from player 0 goes to player 3 (left), player 2 (partner), player 1 (right)."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         # Get specific cards to track
         card_0 = game.players[0].hand[0]
@@ -744,11 +679,8 @@ class TestPushCards:
         assert mock_get_push.call_count == 4
         assert player_1_received and player_2_received and player_3_received
 
-    def test_sequential_push_from_all_players(self):
+    def test_sequential_push_from_all_players(self, game):
         """Test that get_push is called sequentially for each player."""
-        output = StringIO()
-        game = Tichu(seed=42, output=output)
-        game.start_new_round()
 
         call_sequence = []
 

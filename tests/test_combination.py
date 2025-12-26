@@ -107,6 +107,17 @@ from tichu.combination import Combination, CombinationType
             [
                 Card(Color.RED, 2),
                 Card(Color.BLUE, 2),
+                Card(Color.GREEN, 3),
+                Card(Color.RED, 3),
+            ],
+            CombinationType.STAIR,
+            3,
+            2,
+        ),
+        (
+            [
+                Card(Color.RED, 2),
+                Card(Color.BLUE, 2),
                 Card(Color.GREEN, 4),
                 Card(Color.YELLOW, 4),
                 Card(Color.GREEN, 3),
@@ -287,6 +298,13 @@ def test_valid_combinations(cards, expected_type, expected_value, expected_lengt
             Card(Color.YELLOW, 5),
             Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
             Card(Color.RED, 8),
+        ],
+        [
+            Card(Color.YELLOW, 11),
+            Card(Color.YELLOW, 12),
+            Card(Color.RED, 13),
+            Card(Color.GREEN, 14),
+            Card(Color.SPECIAL, SpecialCard.DRAGON.value),
         ],
         [
             Card(Color.GREEN, 4),
