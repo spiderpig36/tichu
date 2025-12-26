@@ -1,4 +1,4 @@
-from .card import Card, Color
+from tichu.card import Card, Color
 
 
 class Player:
@@ -25,16 +25,15 @@ class Player:
         if card in self.hand:
             self.hand.remove(card)
             return card
-        raise ValueError(f"Card {card} not in hand")
+        msg = f"Card {card} not in hand"
+        raise ValueError(msg)
 
     def has_mahjong(self):
         """Check if the player has the Mah Jong card."""
         return any(
-            [
-                card
+            card
                 for card in self.hand
                 if card.color == Color.SPECIAL and card.value == 1
-            ]
         )
 
     def __str__(self):

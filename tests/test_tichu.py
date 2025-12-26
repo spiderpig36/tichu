@@ -1,10 +1,18 @@
-import pytest
 from io import StringIO
 from unittest.mock import MagicMock, patch
 
-from tichu.tichu import NUM_PLAYERS, Tichu, InvalidPlayError
+import pytest
+
 from tichu.card import Card, Color, SpecialCard
 from tichu.combination import CombinationType
+from tichu.tichu import (
+    GRAND_TICHU_SCORE,
+    HAND_SIZE,
+    NUM_PLAYERS,
+    TICHU_SCORE,
+    InvalidPlayError,
+    Tichu,
+)
 
 
 @pytest.fixture
@@ -25,10 +33,14 @@ class TestStartNewRound:
             mock_grand_tichu.side_effect = ["grand_tichu", "pass", "pass", "pass"]
             game.start_new_round()
 
-        assert game.players[0].grand_tichu_called == True
-        assert game.players[1].grand_tichu_called == False
-        assert game.players[2].grand_tichu_called == False
-        assert game.players[3].grand_tichu_called == False
+        assert game.players[0].grand_tichu_called
+        assert not game.players[1].grand_tichu_called
+        assert not game.players[2].grand_tichu_called
+        assert not game.players[3].grand_tichu_called
+
+    def test_cards_are_dealt(self, game):
+        for player in game.players:
+            assert len(player.hand) == HAND_SIZE
 
 
 class TestNextTurnPass:
@@ -97,9 +109,10 @@ class TestNextTurnTichu:
         # Remove a card to make hand size != 14
         player.hand.pop()
 
-        with patch.object(game, "get_play", return_value="tichu"):
-            with pytest.raises(InvalidPlayError):
-                game.next_turn()
+        with patch.object(game, "get_play", return_value="tichu"), pytest.raises(
+            InvalidPlayError
+        ):
+            game.next_turn()
 
 
 class TestNextTurnPlayCard:
@@ -189,9 +202,10 @@ class TestNextTurnPlayCard:
         ]
 
         assert valid_card_indices
-        with patch.object(game, "get_play", return_value={valid_card_indices[0]}):
-            with pytest.raises(InvalidPlayError):
-                game.next_turn()
+        with patch.object(
+            game, "get_play", return_value={valid_card_indices[0]}
+        ), pytest.raises(InvalidPlayError):
+            game.next_turn()
 
     def test_play_non_matching_combination_type_raises_error(self, game):
         """Test that playing non-matching combination type raises error."""
@@ -204,11 +218,11 @@ class TestNextTurnPlayCard:
         game.current_combination.value = 5
         game.current_combination.length = 2
 
-        player = game.current_player
         # Try to play a single card
-        with patch.object(game, "get_play", return_value={0}):
-            with pytest.raises(InvalidPlayError):
-                game.next_turn()
+        with patch.object(game, "get_play", return_value={0}), pytest.raises(
+            InvalidPlayError
+        ):
+            game.next_turn()
 
     def test_bomb_can_always_be_played_over_non_bombs(self, game):
         """Test that a bomb can be played over any non-bomb combination."""
@@ -338,9 +352,10 @@ class TestNextTurnWish:
             Card(Color.JADE, 2),
         ]
 
-        with patch.object(game, "get_play", return_value={0}):
-            with pytest.raises(InvalidPlayError):
-                game.next_turn()
+        with patch.object(game, "get_play", return_value={0}), pytest.raises(
+            InvalidPlayError
+        ):
+            game.next_turn()
 
 
 class TestNextTurnEdgeCases:
@@ -366,9 +381,10 @@ class TestNextTurnEdgeCases:
 
         with patch.object(
             game, "get_play", return_value={hand_size + 10}
+        ), pytest.raises(
+            InvalidPlayError
         ):  # index out of range
-            with pytest.raises(InvalidPlayError):
-                game.next_turn()
+            game.next_turn()
 
     def test_turn_advances_to_next_player(self, game):
         """Test that turn advances to next player after valid play."""
@@ -474,11 +490,11 @@ class TestEndRoundScoring:
         game.end_round_scoring()
 
         # Team 0 should gain 100 for Tichu bonus
-        assert game.scores[0] == initial_team_score + 100
+        assert game.scores[0] == initial_team_score + TICHU_SCORE
 
     def test_grand_tichu_bonus_first_place(self, game):
-        """Test that Tichu called and finishing first grants 100 point bonus."""
-        # Player 0 called Tichu and finished first
+        """Test that Tichu called and finishing first grants 200 point bonus."""
+        # Player 0 called grand Tichu and finished first
 
         game.players[0].grand_tichu_called = True
         game.player_rankings = [0, 1, 2]
@@ -487,8 +503,8 @@ class TestEndRoundScoring:
 
         game.end_round_scoring()
 
-        # Team 0 should gain 100 for Tichu bonus
-        assert game.scores[0] == initial_team_score + 200
+        # Team 0 should gain 200 for Tichu bonus
+        assert game.scores[0] == initial_team_score + GRAND_TICHU_SCORE
 
     def test_tichu_penalty_not_first_place(self, game):
         """Test that Tichu called but not finishing first incurs 100 point penalty."""
@@ -501,7 +517,7 @@ class TestEndRoundScoring:
         game.end_round_scoring()
 
         # Team 1 should lose 100 for failed Tichu
-        assert game.scores[1] <= initial_team_score - 100
+        assert game.scores[1] <= initial_team_score - TICHU_SCORE
 
     def test_card_scoring_from_opposing_player(self, game):
         """Test that opposing player's hand cards are scored."""
@@ -677,7 +693,9 @@ class TestPushCards:
 
         # At least the distribution pattern should work
         assert mock_get_push.call_count == 4
-        assert player_1_received and player_2_received and player_3_received
+        assert player_1_received
+        assert player_2_received
+        assert player_3_received
 
     def test_sequential_push_from_all_players(self, game):
         """Test that get_push is called sequentially for each player."""
@@ -687,7 +705,7 @@ class TestPushCards:
         with patch.object(game, "get_push") as mock_get_push:
             mock_get_push.side_effect = [{0, 1, 2}, {0, 1, 2}, {0, 1, 2}, {0, 1, 2}]
             game.push_cards()
-            call_sequence = [call for call in mock_get_push.call_args_list]
+            call_sequence = list(mock_get_push.call_args_list)
 
         # Should be called 4 times (once per player)
         assert len(call_sequence) == 4

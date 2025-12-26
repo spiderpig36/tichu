@@ -1,9 +1,10 @@
 import random
 import sys
 from typing import IO, Literal
-from .combination import Combination, CombinationType
-from .card import NORMAL_CARD_VALUES, Card, Color, SpecialCard
-from .player import Player
+
+from tichu.card import NORMAL_CARD_VALUES, Card, Color, SpecialCard
+from tichu.combination import Combination, CombinationType
+from tichu.player import Player
 
 
 class OutputManager:
@@ -20,16 +21,17 @@ class OutputManager:
 class TichuError(Exception):
     """Base class for Tichu-related exceptions."""
 
-    pass
-
 
 class InvalidPlayError(TichuError):
     """Raised when a player makes an invalid play."""
 
-    pass
-
 
 NUM_PLAYERS = 4
+TICHU_SCORE = 100
+GRAND_TICHU_SCORE = 200
+MATCH_SCORE = 200
+HAND_SIZE = 14
+GRAND_TICHU_HAND_SIZE = 8
 
 
 class Tichu:
@@ -61,14 +63,16 @@ class Tichu:
             for value in NORMAL_CARD_VALUES:
                 card = Card(color, value)
                 deck.append(card)
-        for card in SpecialCard:
-            deck.append(Card(Color.SPECIAL, card.value))
+        deck.extend([Card(Color.SPECIAL, card.value) for card in SpecialCard])
 
         self.random.shuffle(deck)
         for i, card in enumerate(deck):
             player = self.players[i % NUM_PLAYERS]
             player.add_card(card)
-            if len(player.hand) == 8 and self.get_grand_tichu() == "grand_tichu":
+            if (
+                len(player.hand) == GRAND_TICHU_HAND_SIZE
+                and self.get_grand_tichu() == "grand_tichu"
+            ):
                 player.grand_tichu_called = True
 
         for player in self.players:
@@ -93,7 +97,7 @@ class Tichu:
             return None
         return self.players[self.winning_player_idx]
 
-    def get_play(self) -> set[int] | Literal["pass"] | Literal["tichu"]:
+    def get_play(self) -> Literal["pass", "tichu"] | set[int]:
         prompt = input(
             "Enter the index of the card to play separated by a comma, 'pass' or 'tichu': "
         )
@@ -110,7 +114,7 @@ class Tichu:
             )
             return self.get_play()
 
-    def get_grand_tichu(self) -> Literal["pass"] | Literal["grand_tichu"]:
+    def get_grand_tichu(self) -> Literal["pass", "grand_tichu"]:
         prompt = input("Enter 'grand_tichu' to call a grand tichu or 'pass': ").lower()
         if prompt == "pass":
             return "pass"
@@ -139,11 +143,10 @@ class Tichu:
             value = int(wish)
             if value in NORMAL_CARD_VALUES:
                 return value
-            else:
-                self.output_manager.write(
-                    "Invalid input. Please enter a value between 2 and 14."
-                )
-                return self.get_mahjong_wish()
+            self.output_manager.write(
+                "Invalid input. Please enter a value between 2 and 14."
+            )
+            return self.get_mahjong_wish()
         except ValueError:
             self.output_manager.write(
                 "Invalid input. Please enter a numeric card value. Try again."
@@ -156,12 +159,12 @@ class Tichu:
         )
         try:
             card_indices = [int(idx.strip()) for idx in push.split(",")]
-            if len(card_indices) != 3:
+            if len(card_indices) != NUM_PLAYERS - 1:
                 self.output_manager.write(
                     "You must enter exactly three card indices. Try again."
                 )
                 return self.get_push()
-            if not all(0 <= idx < 14 for idx in card_indices):
+            if not all(0 <= idx < HAND_SIZE for idx in card_indices):
                 self.output_manager.write(
                     "One or more card indices are out of range. Try again."
                 )
@@ -175,8 +178,8 @@ class Tichu:
 
     @property
     def end_of_round(self) -> bool:
-        return len(self.player_rankings) == 3 or (
-            len(self.player_rankings) == 2
+        return len(self.player_rankings) == NUM_PLAYERS - 1 or (
+            len(self.player_rankings) == NUM_PLAYERS / 2
             and self.player_rankings[0] % 2 == self.player_rankings[1] % 2
         )
 
@@ -212,9 +215,8 @@ class Tichu:
                 if self.current_wish is not None and Combination.can_fulfill_wish(
                     self.current_combination, self.current_wish, current_hand
                 ):
-                    raise InvalidPlayError(
-                        f"You can fulfill the wish for card value {self.current_wish} and cannot pass."
-                    )
+                    msg = f"You can fulfill the wish for card value {self.current_wish} and cannot pass."
+                    raise InvalidPlayError(msg)
                 self.output_manager.write(f"{self.current_player.name} has passed.")
                 self.current_player.has_passed = True
                 if all(
@@ -256,11 +258,11 @@ class Tichu:
                     return
             elif play == "tichu":
                 if self.current_player.grand_tichu_called:
-                    raise InvalidPlayError("Grand Tichu was already called.")
-                if len(self.current_player.hand) != 14:
-                    raise InvalidPlayError(
-                        "Tichu can only be called at the start of a turn with a full hand."
-                    )
+                    msg = "Grand Tichu was already called."
+                    raise InvalidPlayError(msg)
+                if len(self.current_player.hand) != HAND_SIZE:
+                    msg = "Tichu can only be called at the start of a turn with a full hand."
+                    raise InvalidPlayError(msg)
                 self.output_manager.write(
                     f"{self.current_player.name} has called Tichu!"
                 )
@@ -269,17 +271,17 @@ class Tichu:
             else:
                 try:
                     played_cards = [current_hand[idx] for idx in play]
-                except IndexError:
-                    raise InvalidPlayError("One or more card indices are out of range.")
+                except IndexError as ie:
+                    msg = "One or more card indices are out of range."
+                    raise InvalidPlayError(msg) from ie
 
                 next_combination = Combination.from_cards(played_cards)
                 if (
                     self.current_combination is not None
                     and not next_combination.can_be_played_on(self.current_combination)
                 ):
-                    raise InvalidPlayError(
-                        "Played combination must be of the same kind as the current combination and higher than the current combination."
-                    )
+                    msg = "Played combination must be of the same kind as the current combination and higher than the current combination."
+                    raise InvalidPlayError(msg)
                 if self.current_wish is not None:
                     if self.current_wish in [card.value for card in played_cards]:
                         self.output_manager.write(
@@ -294,9 +296,8 @@ class Tichu:
                             self.current_wish,
                             self.current_player.hand,
                         ):
-                            raise InvalidPlayError(
-                                f"The played combination does not fulfill the wish for card value {self.current_wish}."
-                            )
+                            msg = f"The played combination does not fulfill the wish for card value {self.current_wish}."
+                            raise InvalidPlayError(msg)
 
                 self.current_combination = next_combination
                 self.winning_player_idx = self.current_player_idx
@@ -352,14 +353,18 @@ class Tichu:
         for i, player in enumerate(self.players):
             if player.tichu_called or player.grand_tichu_called:
                 if self.player_rankings[0] == i:
-                    team_scores[i % 2] += 200 if player.grand_tichu_called else 100
+                    team_scores[i % 2] += (
+                        GRAND_TICHU_SCORE if player.grand_tichu_called else TICHU_SCORE
+                    )
                 else:
-                    team_scores[i % 2] -= 200 if player.grand_tichu_called else 100
+                    team_scores[i % 2] -= (
+                        GRAND_TICHU_SCORE if player.grand_tichu_called else TICHU_SCORE
+                    )
         if (
-            len(self.player_rankings) == 2
+            len(self.player_rankings) == NUM_PLAYERS / 2
             and self.player_rankings[0] % 2 == self.player_rankings[1] % 2
         ):
-            team_scores[self.player_rankings[0] % 2] += 200
+            team_scores[self.player_rankings[0] % 2] += MATCH_SCORE
         else:
             loosing_player = next(
                 i for i in range(NUM_PLAYERS) if i not in self.player_rankings

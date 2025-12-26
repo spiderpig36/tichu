@@ -1,10 +1,11 @@
 import pytest
+
 from tichu.card import Card, Color, SpecialCard
 from tichu.combination import Combination, CombinationType
 
 
 @pytest.mark.parametrize(
-    "cards, expected_type, expected_value, expected_length",
+    ("cards", "expected_type", "expected_value", "expected_length"),
     [
         ([Card(Color.JADE, 10)], CombinationType.SINGLE, 10, 1),
         ([Card(Color.JADE, 5), Card(Color.SWORD, 5)], CombinationType.PAIR, 5, 1),
@@ -343,7 +344,7 @@ def test_invalid_combinations(cards):
 
 
 @pytest.mark.parametrize(
-    "played_type, played_value, played_length, current_type, current_value, current_length, expected",
+    ("played_type", "played_value", "played_length", "current_type", "current_value", "current_length", "expected"),
     [
         # Single card beats single card (higher value)
         (CombinationType.SINGLE, 10, 1, CombinationType.SINGLE, 8, 1, True),
@@ -394,7 +395,7 @@ def test_can_be_played_on_same_types(
 
 
 @pytest.mark.parametrize(
-    "played_type, played_value, played_length, current_type, current_value, current_length, expected",
+    ("played_type", "played_value", "played_length", "current_type", "current_value", "current_length", "expected"),
     [
         # Bomb beats any non-bomb
         (CombinationType.BOMB, 10, 1, CombinationType.SINGLE, 14, 1, True),
@@ -461,7 +462,7 @@ def test_can_be_played_on_bombs(
 
 
 @pytest.mark.parametrize(
-    "played_type, played_value, played_length, current_type, current_value, current_length, expected",
+    ("played_type", "played_value", "played_length", "current_type", "current_value", "current_length", "expected"),
     [
         # Non-bomb cannot beat bomb
         (CombinationType.SINGLE, 14, 1, CombinationType.BOMB, 2, 1, False),
@@ -493,7 +494,7 @@ def test_can_be_played_on_non_bomb_vs_bomb(
 
 
 @pytest.mark.parametrize(
-    "current_type,current_value,current_length,wish_value,player_cards,expected",
+    ("current_type", "current_value", "current_length", "wish_value", "player_cards", "expected"),
     [
         # SINGLE: higher single available -> True
         (CombinationType.SINGLE, 5, 1, 7, [Card(Color.JADE, 7)], True),
