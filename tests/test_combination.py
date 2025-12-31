@@ -344,7 +344,15 @@ def test_invalid_combinations(cards):
 
 
 @pytest.mark.parametrize(
-    ("played_type", "played_value", "played_length", "current_type", "current_value", "current_length", "expected"),
+    (
+        "played_type",
+        "played_value",
+        "played_length",
+        "current_type",
+        "current_value",
+        "current_length",
+        "expected",
+    ),
     [
         # Single card beats single card (higher value)
         (CombinationType.SINGLE, 10, 1, CombinationType.SINGLE, 8, 1, True),
@@ -395,7 +403,15 @@ def test_can_be_played_on_same_types(
 
 
 @pytest.mark.parametrize(
-    ("played_type", "played_value", "played_length", "current_type", "current_value", "current_length", "expected"),
+    (
+        "played_type",
+        "played_value",
+        "played_length",
+        "current_type",
+        "current_value",
+        "current_length",
+        "expected",
+    ),
     [
         # Bomb beats any non-bomb
         (CombinationType.BOMB, 10, 1, CombinationType.SINGLE, 14, 1, True),
@@ -462,7 +478,15 @@ def test_can_be_played_on_bombs(
 
 
 @pytest.mark.parametrize(
-    ("played_type", "played_value", "played_length", "current_type", "current_value", "current_length", "expected"),
+    (
+        "played_type",
+        "played_value",
+        "played_length",
+        "current_type",
+        "current_value",
+        "current_length",
+        "expected",
+    ),
     [
         # Non-bomb cannot beat bomb
         (CombinationType.SINGLE, 14, 1, CombinationType.BOMB, 2, 1, False),
@@ -494,7 +518,14 @@ def test_can_be_played_on_non_bomb_vs_bomb(
 
 
 @pytest.mark.parametrize(
-    ("current_type", "current_value", "current_length", "wish_value", "player_cards", "expected"),
+    (
+        "current_type",
+        "current_value",
+        "current_length",
+        "wish_value",
+        "player_cards",
+        "expected",
+    ),
     [
         # SINGLE: higher single available -> True
         (CombinationType.SINGLE, 5, 1, 7, [Card(Color.JADE, 7)], True),
@@ -890,3 +921,95 @@ def test_can_fulfill_wish(
         Combination.can_fulfill_wish(current_combo, wish_value, player_cards)
         is expected
     )
+
+
+@pytest.mark.parametrize(
+    (
+        "combination",
+        "cards",
+        "expected",
+    ),
+    [
+        (None, [Card(Color.JADE, 7)], [Combination(CombinationType.SINGLE, 7)]),
+        (
+            None,
+            [Card(Color.JADE, 7), Card(Color.PAGODE, 7)],
+            [
+                Combination(CombinationType.SINGLE, 7),
+                Combination(CombinationType.PAIR, 7),
+            ],
+        ),
+        (
+            None,
+            [Card(Color.JADE, 7), Card(Color.PAGODE, 7), Card(Color.SWORD, 7)],
+            [
+                Combination(CombinationType.SINGLE, 7),
+                Combination(CombinationType.PAIR, 7),
+                Combination(CombinationType.TRIPLE, 7),
+            ],
+        ),
+        (
+            Combination(CombinationType.SINGLE, 14),
+            [
+                Card(Color.JADE, 7),
+                Card(Color.PAGODE, 7),
+                Card(Color.SWORD, 7),
+                Card(Color.STAR, 7),
+            ],
+            [
+                Combination(CombinationType.BOMB, 7),
+            ],
+        ),
+        (
+            None,
+            [
+                Card(Color.JADE, 7),
+                Card(Color.PAGODE, 8),
+                Card(Color.PAGODE, 9),
+                Card(Color.PAGODE, 10),
+                Card(Color.PAGODE, 11),
+                Card(Color.PAGODE, 12),
+            ],
+            [
+                Combination(CombinationType.SINGLE, 7),
+                Combination(CombinationType.SINGLE, 8),
+                Combination(CombinationType.SINGLE, 9),
+                Combination(CombinationType.SINGLE, 10),
+                Combination(CombinationType.SINGLE, 11),
+                Combination(CombinationType.SINGLE, 12),
+                Combination(CombinationType.STRAIGHT, 12, 5),
+                Combination(CombinationType.STRAIGHT, 11, 5),
+                Combination(CombinationType.STRAIGHT, 12, 6),
+            ],
+        ),
+        (
+            None,
+            [
+                Card(Color.JADE, 7),
+                Card(Color.PAGODE, 8),
+                Card(Color.PAGODE, 9),
+                Card(Color.PAGODE, 10),
+                Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+            ],
+            [
+                Combination(CombinationType.SINGLE, 7),
+                Combination(CombinationType.SINGLE, 8),
+                Combination(CombinationType.SINGLE, 9),
+                Combination(CombinationType.SINGLE, 10),
+                Combination(CombinationType.SINGLE, 0.5),
+                Combination(CombinationType.PAIR, 7),
+                Combination(CombinationType.PAIR, 8),
+                Combination(CombinationType.PAIR, 9),
+                Combination(CombinationType.PAIR, 10),
+                Combination(CombinationType.STRAIGHT, 11, 5),
+                Combination(CombinationType.STRAIGHT, 10, 5),
+            ],
+        ),
+    ],
+)
+def test_possible_plays(
+    combination,
+    cards,
+    expected,
+):
+    assert Combination.possible_plays(combination, cards) == expected

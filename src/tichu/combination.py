@@ -34,10 +34,19 @@ FULL_HOUSE_LENGTH_2 = 2
 
 
 class Combination:
-    def __init__(self, combination_type: CombinationType, value: int, length: int = 1):
+    def __init__(
+        self, combination_type: CombinationType, value: int | float, length: int = 1
+    ):
         self.combination_type = combination_type
         self.value = value
         self.length = length
+
+    def __eq__(self, value):
+        return (
+            self.combination_type == value.combination_type
+            and self.value == value.value
+            and self.length == value.length
+        )
 
     @classmethod
     def from_cards(cls, cards: list[Card]) -> "Combination | None":
@@ -150,7 +159,7 @@ class Combination:
             if len(window) == length or (len(window) == length - 1 and has_phoenix):
                 return Combination(
                     CombinationType.STRAIGHT,
-                    (window_end if window_end in window else window_end + 1),
+                    window_end,
                     length,
                 )
         return None
@@ -165,7 +174,7 @@ class Combination:
 
     @staticmethod
     def can_fulfill_wish(
-        combination: "Combination", wish_value: int, cards: list[Card]
+        combination: "Combination | None", wish_value: int, cards: list[Card]
     ) -> bool:
         card_count = Combination.get_card_count(cards)
         wish_card_count = card_count.get(wish_value, 0)
@@ -173,6 +182,8 @@ class Combination:
         next_combination = None
         if wish_card_count == 0:
             return False
+        if combination is None:
+            return True
         for color in Color:
             if color == Color.SPECIAL:
                 continue
@@ -268,3 +279,108 @@ class Combination:
         return next_combination is not None and next_combination.can_be_played_on(
             combination
         )
+
+    @staticmethod
+    def possible_plays(
+        combination: Combination | None,
+        cards: list[Card],
+    ) -> list[Combination]:
+        min_value = round(combination.value) if combination else 0
+        card_count = Combination.get_card_count(cards)
+        has_phoenix = SpecialCard.PHOENIX.value in [card.value for card in cards]
+        has_dragon = SpecialCard.DRAGON.value in [card.value for card in cards]
+        has_dog = SpecialCard.DOG.value in [card.value for card in cards]
+        possible_combinations: list[Combination] = []
+
+        if (
+            combination is None
+            or combination.combination_type == CombinationType.SINGLE
+        ):
+            possible_combinations.extend(
+                [
+                    Combination(CombinationType.SINGLE, value)
+                    for value in card_count.keys()
+                    if value > min_value
+                ]
+            )
+            if has_phoenix and min_value < SpecialCard.DRAGON.value:
+                possible_combinations.append(
+                    Combination(
+                        CombinationType.SINGLE,
+                        (0 if combination is None else combination.value) + 0.5,
+                    )
+                )
+            if has_dragon:
+                possible_combinations.append(
+                    Combination(CombinationType.SINGLE, SpecialCard.DRAGON.value)
+                )
+            if has_dog and min_value == 0:
+                possible_combinations.append(
+                    Combination(CombinationType.SINGLE, SpecialCard.DOG.value)
+                )
+
+        if combination is None or combination.combination_type == CombinationType.PAIR:
+            possible_combinations.extend(
+                [
+                    Combination(CombinationType.PAIR, value)
+                    for value, count in card_count.items()
+                    if (count >= 2 or (count >= 1 and has_phoenix))
+                    and value > min_value
+                ]
+            )
+        if (
+            combination is None
+            or combination.combination_type == CombinationType.TRIPLE
+        ):
+            possible_combinations.extend(
+                [
+                    Combination(CombinationType.TRIPLE, value)
+                    for value, count in card_count.items()
+                    if (count >= 3 or (count >= 2 and has_phoenix))
+                    and value > min_value
+                ]
+            )
+        if (
+            combination is not None
+            and combination.combination_type is not CombinationType.STRAIGHT_BOMB
+        ):
+            possible_combinations.extend(
+                [
+                    Combination(CombinationType.BOMB, value)
+                    for value, count in card_count.items()
+                    if count == 4
+                    and (
+                        combination.combination_type != CombinationType.BOMB
+                        or value > min_value
+                    )
+                ]
+            )
+        if (
+            combination is None
+            or combination.combination_type == CombinationType.STRAIGHT
+        ):
+            straight_values = sorted(card_count.keys())
+            for length in range(
+                combination.length if combination else STRAIGHT_MIN_SIZE,
+                combination.length + 1 if combination else 14,
+            ):
+                for i in range(14, max(min_value, length) - 1, -1):
+                    window_start = i - (length - 1)
+                    window_end = i
+                    window = [
+                        val
+                        for val in straight_values
+                        if window_start <= val <= window_end
+                    ]
+                    if len(window) == length or (
+                        len(window) == length - 1 and has_phoenix
+                    ):
+                        possible_combinations.append(
+                            Combination(
+                                CombinationType.STRAIGHT,
+                                window_end,
+                                length,
+                            )
+                        )
+
+        return possible_combinations
