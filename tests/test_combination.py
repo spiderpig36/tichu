@@ -1005,6 +1005,26 @@ def test_can_fulfill_wish(
                 Combination(CombinationType.STRAIGHT, 10, 5),
             ],
         ),
+        (
+            Combination(CombinationType.SINGLE, 9),
+            [
+                Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+            ],
+            [
+                Combination(CombinationType.SINGLE, 9.5),
+            ],
+        ),
+        (
+            Combination(CombinationType.SINGLE, 9),
+            [
+                Card(Color.SPECIAL, SpecialCard.DOG.value),
+                Card(Color.SWORD, 8),
+                Card(Color.SWORD, 10),
+            ],
+            [
+                Combination(CombinationType.SINGLE, 10),
+            ],
+        ),
     ],
 )
 def test_possible_plays(
