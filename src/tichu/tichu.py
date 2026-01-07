@@ -281,6 +281,9 @@ class Tichu:
                     raise InvalidPlayError(msg) from ie
 
                 next_combination = Combination.from_cards(played_cards)
+                if next_combination is None:
+                    msg = "Cards are not a valid combination."
+                    raise InvalidPlayError(msg)
                 if (
                     self.current_combination is not None
                     and not next_combination.can_be_played_on(self.current_combination)
@@ -338,7 +341,7 @@ class Tichu:
                     and self.current_combination.value == SpecialCard.PHOENIX.value
                 ):
                     self.current_combination.value = (
-                        self.card_stack[-2] + 0.5
+                        self.card_stack[-2].value + 0.5
                         if len(self.card_stack) > 1
                         else NORMAL_CARD_VALUES[0]
                     )

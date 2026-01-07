@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from tichu.card import Card, Color, SpecialCard
-from tichu.combination import CombinationType
+from tichu.combination import Combination, CombinationType
 from tichu.tichu import (
     GRAND_TICHU_SCORE,
     HAND_SIZE,
@@ -16,7 +16,7 @@ from tichu.tichu import (
 
 
 @pytest.fixture
-def game():
+def game() -> Tichu:
     """Create a game instance and start a new round."""
     output = StringIO()
     game_instance = Tichu(seed=42, output=output)
@@ -264,10 +264,13 @@ class TestNextTurnSpecialCards:
         # Next player should be teammate (2 positions ahead)
         assert game.current_player_idx == 2
 
-    def test_play_phoenix_updates_combination_value(self, game):
+    def test_play_phoenix_updates_combination_value(self, game: Tichu):
         """Test that playing Phoenix updates combination value."""
 
+        card_value = 5
         game.current_player_idx = 0
+        game.card_stack = [Card(Color.JADE, card_value)]
+        game.current_combination = Combination(CombinationType.SINGLE, card_value)
         # Replace first card with Phoenix
         game.current_player.hand[0] = Card(Color.SPECIAL, SpecialCard.PHOENIX.value)
 
@@ -277,6 +280,7 @@ class TestNextTurnSpecialCards:
         # Combination should be set with Phoenix
         assert game.current_combination is not None
         assert game.current_combination.combination_type == CombinationType.SINGLE
+        assert game.current_combination.value == card_value + 0.5
 
     def test_play_mahjong_prompts_for_wish(self, game):
         """Test that playing Mah Jong prompts for wish value."""
