@@ -1,4 +1,5 @@
 from enum import Enum
+from functools import reduce
 
 from tichu.card import Card, Color, SpecialCard
 
@@ -146,25 +147,6 @@ class Combination:
         )
 
     @staticmethod
-    def possible_wish_straight(
-        length: int, wish_value: int, card_count: dict[int, int], *, has_phoenix: bool
-    ) -> "Combination | None":
-        straight_values = sorted(card_count.keys())
-        for i in range(length - 1, -1, -1):
-            window_start = max(0, wish_value - (length - 1) + i)
-            window_end = min(wish_value + i, 14)
-            window = [
-                val for val in straight_values if window_start <= val <= window_end
-            ]
-            if len(window) == length or (len(window) == length - 1 and has_phoenix):
-                return Combination(
-                    CombinationType.STRAIGHT,
-                    window_end,
-                    length,
-                )
-        return None
-
-    @staticmethod
     def get_card_count(cards: list[Card]) -> dict[int, int]:
         card_count: dict[int, int] = {}
         for card in cards:
@@ -177,6 +159,7 @@ class Combination:
         combination: "Combination | None", wish_value: int, cards: list[Card]
     ) -> bool:
         card_count = Combination.get_card_count(cards)
+        straight_values = sorted(card_count.keys())
         wish_card_count = card_count.get(wish_value, 0)
         has_phoenix = SpecialCard.PHOENIX.value in [card.value for card in cards]
         next_combination = None
@@ -184,22 +167,40 @@ class Combination:
             return False
         if combination is None:
             return True
-        for color in Color:
-            if color == Color.SPECIAL:
-                continue
-            cards_in_color = [card for card in cards if card.color == color]
-            color_cards_count = Combination.get_card_count(cards_in_color)
-            if (
-                wish_value in color_cards_count
-                and len(color_cards_count) >= STRAIGHT_MIN_SIZE
-            ):
-                next_combination = Combination.possible_wish_straight(
-                    5, wish_value, color_cards_count, has_phoenix=False
+
+        length = (
+            combination.length
+            if combination.combination_type == CombinationType.STRAIGHT_BOMB
+            else 5
+        )
+        for i in range(length - 1, -1, -1):
+            window_start = max(0, wish_value - (length - 1) + i)
+            window_end = min(wish_value + i, 14)
+            window = [
+                val for val in straight_values if window_start <= val <= window_end
+            ]
+            if len(window) == length:
+                possible_cards = [
+                    card for card in cards if window_start <= card.value <= window_end
+                ]
+                card_buckets: dict[int, set[Color]] = {}
+                for card in possible_cards:
+                    current_set = card_buckets.get(card.value, set())
+                    current_set.add(card.color)
+                    card_buckets[card.value] = current_set
+                colors = reduce(
+                    lambda x, y: x.intersection(y),
+                    list(card_buckets.values()),
+                    set(Color),
                 )
-                if next_combination is not None:
-                    next_combination.combination_type = CombinationType.STRAIGHT_BOMB
-                    break
-        if wish_card_count == BOMB_SIZE:
+                if len(colors) > 0:
+                    next_combination = Combination(
+                        CombinationType.STRAIGHT_BOMB,
+                        window_end,
+                        length,
+                    )
+
+        if next_combination is None and wish_card_count == BOMB_SIZE:
             next_combination = Combination(CombinationType.BOMB, wish_value)
         if next_combination is None:
             match combination.combination_type:
@@ -217,13 +218,6 @@ class Combination:
                         next_combination = Combination(
                             CombinationType.TRIPLE, wish_value
                         )
-                case CombinationType.STRAIGHT:
-                    next_combination = Combination.possible_wish_straight(
-                        combination.length,
-                        wish_value,
-                        card_count,
-                        has_phoenix=has_phoenix,
-                    )
                 case CombinationType.FULL_HOUSE:
                     if (
                         FULL_HOUSE_LENGTH_2 - int(has_phoenix)
@@ -246,6 +240,25 @@ class Combination:
                                 sorted(card_count.keys())[-1],
                             ),
                         )
+                case CombinationType.STRAIGHT:
+                    length = combination.length
+                    for i in range(length - 1, -1, -1):
+                        window_start = max(0, wish_value - (length - 1) + i)
+                        window_end = min(wish_value + i, 14)
+                        window = [
+                            val
+                            for val in straight_values
+                            if window_start <= val <= window_end
+                        ]
+                        if len(window) == length or (
+                            len(window) == length - 1 and has_phoenix
+                        ):
+                            next_combination = Combination(
+                                CombinationType.STRAIGHT,
+                                window_end,
+                                length,
+                            )
+                            break
                 case CombinationType.STAIR:
                     straight_items = sorted(card_count.items(), key=lambda i: i[0])
                     for i in range(combination.length, 0, -1):
@@ -282,9 +295,9 @@ class Combination:
 
     @staticmethod
     def possible_plays(
-        combination: Combination | None,
+        combination: "Combination | None",
         cards: list[Card],
-    ) -> list[Combination]:
+    ) -> list["Combination"]:
         min_value = round(combination.value) if combination else 0
         card_count = Combination.get_card_count(cards)
         has_phoenix = SpecialCard.PHOENIX.value in [card.value for card in cards]

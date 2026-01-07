@@ -71,12 +71,9 @@ class TestNextTurnPass:
         game.current_combination.combination_type = CombinationType.SINGLE
         game.current_combination.value = 5
 
-        # Mark players 1, 2, 3 as passed
-        game.players[1].has_passed = True
-        game.players[2].has_passed = True
-        game.players[3].has_passed = True
-
         with patch.object(game, "get_play", return_value="pass"):
+            game.next_turn()
+            game.next_turn()
             game.next_turn()
 
         # Combination should be reset
@@ -109,8 +106,9 @@ class TestNextTurnTichu:
         # Remove a card to make hand size != 14
         player.hand.pop()
 
-        with patch.object(game, "get_play", return_value="tichu"), pytest.raises(
-            InvalidPlayError
+        with (
+            patch.object(game, "get_play", return_value="tichu"),
+            pytest.raises(InvalidPlayError),
         ):
             game.next_turn()
 
@@ -202,9 +200,10 @@ class TestNextTurnPlayCard:
         ]
 
         assert valid_card_indices
-        with patch.object(
-            game, "get_play", return_value={valid_card_indices[0]}
-        ), pytest.raises(InvalidPlayError):
+        with (
+            patch.object(game, "get_play", return_value={valid_card_indices[0]}),
+            pytest.raises(InvalidPlayError),
+        ):
             game.next_turn()
 
     def test_play_non_matching_combination_type_raises_error(self, game):
@@ -219,8 +218,9 @@ class TestNextTurnPlayCard:
         game.current_combination.length = 2
 
         # Try to play a single card
-        with patch.object(game, "get_play", return_value={0}), pytest.raises(
-            InvalidPlayError
+        with (
+            patch.object(game, "get_play", return_value={0}),
+            pytest.raises(InvalidPlayError),
         ):
             game.next_turn()
 
@@ -285,8 +285,9 @@ class TestNextTurnSpecialCards:
         # Replace first card with Mah Jong
         game.current_player.hand[0] = Card(Color.SPECIAL, SpecialCard.MAH_JONG.value)
 
-        with patch.object(game, "get_play", return_value={0}), patch.object(
-            game, "get_mahjong_wish", return_value=7
+        with (
+            patch.object(game, "get_play", return_value={0}),
+            patch.object(game, "get_mahjong_wish", return_value=7),
         ):
             game.next_turn()
 
@@ -309,8 +310,9 @@ class TestNextTurnSpecialCards:
         game.current_combination.combination_type = CombinationType.SINGLE
         game.current_combination.value = SpecialCard.DRAGON.value
 
-        with patch.object(game, "get_play", return_value="pass"), patch.object(
-            game, "get_dragon_stack_recipient", return_value=2
+        with (
+            patch.object(game, "get_play", return_value="pass"),
+            patch.object(game, "get_dragon_stack_recipient", return_value=2),
         ):
             game.next_turn()
 
@@ -352,8 +354,9 @@ class TestNextTurnWish:
             Card(Color.JADE, 2),
         ]
 
-        with patch.object(game, "get_play", return_value={0}), pytest.raises(
-            InvalidPlayError
+        with (
+            patch.object(game, "get_play", return_value={0}),
+            pytest.raises(InvalidPlayError),
         ):
             game.next_turn()
 
@@ -379,10 +382,9 @@ class TestNextTurnEdgeCases:
         game.current_player_idx = 0
         hand_size = len(game.current_player.hand)
 
-        with patch.object(
-            game, "get_play", return_value={hand_size + 10}
-        ), pytest.raises(
-            InvalidPlayError
+        with (
+            patch.object(game, "get_play", return_value={hand_size + 10}),
+            pytest.raises(InvalidPlayError),
         ):  # index out of range
             game.next_turn()
 

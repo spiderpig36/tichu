@@ -45,7 +45,7 @@ class Tichu:
         self.players = [Player(f"Player {i}") for i in range(NUM_PLAYERS)]
         self.random = random.Random(seed)
 
-        self.current_player_idx = 0
+        self.current_player_idx: int = 0
         self.winning_player_idx: int | None = None
         self.current_combination: Combination | None = None
         self.current_wish: int | None = None
@@ -224,13 +224,17 @@ class Tichu:
                     for player in self.players
                     if player != self.winning_player
                 ):
+
                     self.output_manager.write(
                         "All other players have passed. Resetting current combination."
                     )
+                    if self.winning_player_idx is None or self.winning_player is None:
+                        return
                     for player in self.players:
                         player.has_passed = False
                     if (
-                        self.current_combination.combination_type
+                        self.current_combination
+                        and self.current_combination.combination_type
                         == CombinationType.SINGLE
                         and self.current_combination.value == SpecialCard.DRAGON.value
                     ):
@@ -245,12 +249,13 @@ class Tichu:
                                     "Invalid player index. Try again."
                                 )
                                 recipient_id = None
-                            if recipient_id % 2 == self.winning_player_idx % 2:
+                            elif recipient_id % 2 == self.winning_player_idx % 2:
                                 self.output_manager.write(
                                     "Cannot give the dragon stack to your teammate. Try again."
                                 )
                                 recipient_id = None
-                            self.winning_player_idx = recipient_id
+                            else:
+                                self.winning_player_idx = recipient_id
                     self.current_combination = None
                     self.winning_player.card_stack.extend(self.card_stack)
                     self.card_stack.clear()
