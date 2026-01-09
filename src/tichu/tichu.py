@@ -301,13 +301,15 @@ class Tichu:
                         card.value for card in self.current_player.hand
                     ]:
                         if Combination.can_fulfill_wish(
-                            next_combination,
+                            self.current_combination,
                             self.current_wish,
                             self.current_player.hand,
                         ):
                             msg = f"The played combination does not fulfill the wish for card value {self.current_wish}."
                             raise InvalidPlayError(msg)
 
+                for player in self.players:
+                    player.has_passed = False
                 self.current_combination = next_combination
                 self.winning_player_idx = self.current_player_idx
                 for card in played_cards:
