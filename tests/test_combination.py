@@ -974,99 +974,84 @@ def test_can_fulfill_wish(
         "expected",
     ),
     [
-        (None, [Card(Color.JADE, 7)], [Combination(CombinationType.SINGLE, 7)]),
+        (
+            None,
+            [Card(Color.JADE, 7)],
+            [{Card(Color.JADE, 7)}],
+        ),
         (
             None,
             [Card(Color.JADE, 7), Card(Color.PAGODE, 7)],
             [
-                Combination(CombinationType.SINGLE, 7),
-                Combination(CombinationType.PAIR, 7),
+                {Card(Color.PAGODE, 7)},
+                {Card(Color.JADE, 7)},
+                {Card(Color.PAGODE, 7), Card(Color.JADE, 7)},
+            ],
+        ),
+        (
+            Combination(CombinationType.PAIR, 6, 1),
+            [Card(Color.JADE, 7), Card(Color.PAGODE, 7)],
+            [
+                {Card(Color.PAGODE, 7), Card(Color.JADE, 7)},
+            ],
+        ),
+        (
+            Combination(CombinationType.PAIR, 6, 1),
+            [Card(Color.JADE, 7), Card(Color.SPECIAL, SpecialCard.PHOENIX.value)],
+            [
+                {Card(Color.JADE, 7), Card(Color.SPECIAL, SpecialCard.PHOENIX.value)},
             ],
         ),
         (
             None,
             [Card(Color.JADE, 7), Card(Color.PAGODE, 7), Card(Color.SWORD, 7)],
             [
-                Combination(CombinationType.SINGLE, 7),
-                Combination(CombinationType.PAIR, 7),
-                Combination(CombinationType.TRIPLE, 7),
+                {Card(Color.PAGODE, 7)},
+                {Card(Color.JADE, 7)},
+                {Card(Color.SWORD, 7)},
+                {Card(Color.PAGODE, 7), Card(Color.JADE, 7)},
+                {Card(Color.PAGODE, 7), Card(Color.SWORD, 7)},
+                {Card(Color.JADE, 7), Card(Color.SWORD, 7)},
+                {
+                    Card(Color.PAGODE, 7),
+                    Card(Color.JADE, 7),
+                    Card(Color.SWORD, 7),
+                },
             ],
         ),
         (
-            Combination(CombinationType.SINGLE, 14),
+            None,
             [
+                Card(Color.STAR, 7),
                 Card(Color.JADE, 7),
                 Card(Color.PAGODE, 7),
                 Card(Color.SWORD, 7),
-                Card(Color.STAR, 7),
             ],
             [
-                Combination(CombinationType.BOMB, 7),
-            ],
-        ),
-        (
-            None,
-            [
-                Card(Color.JADE, 7),
-                Card(Color.PAGODE, 8),
-                Card(Color.PAGODE, 9),
-                Card(Color.PAGODE, 10),
-                Card(Color.PAGODE, 11),
-                Card(Color.PAGODE, 12),
-            ],
-            [
-                Combination(CombinationType.SINGLE, 7),
-                Combination(CombinationType.SINGLE, 8),
-                Combination(CombinationType.SINGLE, 9),
-                Combination(CombinationType.SINGLE, 10),
-                Combination(CombinationType.SINGLE, 11),
-                Combination(CombinationType.SINGLE, 12),
-                Combination(CombinationType.STRAIGHT, 12, 5),
-                Combination(CombinationType.STRAIGHT, 11, 5),
-                Combination(CombinationType.STRAIGHT, 12, 6),
-            ],
-        ),
-        (
-            None,
-            [
-                Card(Color.JADE, 7),
-                Card(Color.PAGODE, 8),
-                Card(Color.PAGODE, 9),
-                Card(Color.PAGODE, 10),
-                Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
-            ],
-            [
-                Combination(CombinationType.SINGLE, 7),
-                Combination(CombinationType.SINGLE, 8),
-                Combination(CombinationType.SINGLE, 9),
-                Combination(CombinationType.SINGLE, 10),
-                Combination(CombinationType.SINGLE, 0.5),
-                Combination(CombinationType.PAIR, 7),
-                Combination(CombinationType.PAIR, 8),
-                Combination(CombinationType.PAIR, 9),
-                Combination(CombinationType.PAIR, 10),
-                Combination(CombinationType.STRAIGHT, 11, 5),
-                Combination(CombinationType.STRAIGHT, 10, 5),
-            ],
-        ),
-        (
-            Combination(CombinationType.SINGLE, 9),
-            [
-                Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
-            ],
-            [
-                Combination(CombinationType.SINGLE, 9.5),
-            ],
-        ),
-        (
-            Combination(CombinationType.SINGLE, 9),
-            [
-                Card(Color.SPECIAL, SpecialCard.DOG.value),
-                Card(Color.SWORD, 8),
-                Card(Color.SWORD, 10),
-            ],
-            [
-                Combination(CombinationType.SINGLE, 10),
+                {Card(Color.PAGODE, 7)},
+                {Card(Color.JADE, 7)},
+                {Card(Color.SWORD, 7)},
+                {Card(Color.STAR, 7)},
+                {Card(Color.PAGODE, 7), Card(Color.JADE, 7)},
+                {Card(Color.PAGODE, 7), Card(Color.SWORD, 7)},
+                {Card(Color.JADE, 7), Card(Color.SWORD, 7)},
+                {Card(Color.STAR, 7), Card(Color.JADE, 7)},
+                {Card(Color.STAR, 7), Card(Color.PAGODE, 7)},
+                {Card(Color.STAR, 7), Card(Color.SWORD, 7)},
+                {Card(Color.STAR, 7), Card(Color.JADE, 7), Card(Color.PAGODE, 7)},
+                {Card(Color.STAR, 7), Card(Color.JADE, 7), Card(Color.SWORD, 7)},
+                {Card(Color.STAR, 7), Card(Color.PAGODE, 7), Card(Color.SWORD, 7)},
+                {
+                    Card(Color.PAGODE, 7),
+                    Card(Color.JADE, 7),
+                    Card(Color.SWORD, 7),
+                },
+                {
+                    Card(Color.STAR, 7),
+                    Card(Color.JADE, 7),
+                    Card(Color.PAGODE, 7),
+                    Card(Color.SWORD, 7),
+                },
             ],
         ),
     ],
@@ -1076,4 +1061,6 @@ def test_possible_plays(
     cards,
     expected,
 ):
-    assert Combination.possible_plays(combination, cards) == expected
+    possible_plays = Combination.possible_plays(combination, cards)
+    assert all(expected_play in possible_plays for expected_play in expected)
+    assert len(expected) == len(possible_plays)

@@ -63,3 +63,6 @@ class Card:
 
     def __eq__(self, value):
         return self.color == value.color and self.value == value.value
+
+    def __hash__(self):
+        return hash((self.color, self.value))
