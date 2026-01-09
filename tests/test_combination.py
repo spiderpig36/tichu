@@ -1054,6 +1054,171 @@ def test_can_fulfill_wish(
                 },
             ],
         ),
+        (
+            None,
+            [
+                Card(Color.STAR, 2),
+                Card(Color.JADE, 3),
+                Card(Color.PAGODE, 4),
+                Card(Color.SWORD, 5),
+                Card(Color.JADE, 6),
+            ],
+            [
+                {Card(Color.STAR, 2)},
+                {Card(Color.JADE, 3)},
+                {Card(Color.PAGODE, 4)},
+                {Card(Color.SWORD, 5)},
+                {Card(Color.JADE, 6)},
+                {
+                    Card(Color.STAR, 2),
+                    Card(Color.JADE, 3),
+                    Card(Color.PAGODE, 4),
+                    Card(Color.SWORD, 5),
+                    Card(Color.JADE, 6),
+                },
+            ],
+        ),
+        (
+            None,
+            [
+                Card(Color.STAR, 2),
+                Card(Color.JADE, 3),
+                Card(Color.PAGODE, 4),
+                Card(Color.SWORD, 5),
+                Card(Color.JADE, 6),
+                Card(Color.PAGODE, 7),
+            ],
+            [
+                {Card(Color.STAR, 2)},
+                {Card(Color.JADE, 3)},
+                {Card(Color.PAGODE, 4)},
+                {Card(Color.SWORD, 5)},
+                {Card(Color.JADE, 6)},
+                {Card(Color.PAGODE, 7)},
+                {
+                    Card(Color.STAR, 2),
+                    Card(Color.JADE, 3),
+                    Card(Color.PAGODE, 4),
+                    Card(Color.SWORD, 5),
+                    Card(Color.JADE, 6),
+                },
+                {
+                    Card(Color.JADE, 3),
+                    Card(Color.PAGODE, 4),
+                    Card(Color.SWORD, 5),
+                    Card(Color.JADE, 6),
+                    Card(Color.PAGODE, 7),
+                },
+                {
+                    Card(Color.STAR, 2),
+                    Card(Color.JADE, 3),
+                    Card(Color.PAGODE, 4),
+                    Card(Color.SWORD, 5),
+                    Card(Color.JADE, 6),
+                    Card(Color.PAGODE, 7),
+                },
+            ],
+        ),
+        (
+            Combination(CombinationType.STRAIGHT, 6, 5),
+            [
+                Card(Color.JADE, 3),
+                Card(Color.PAGODE, 4),
+                Card(Color.SWORD, 5),
+                Card(Color.JADE, 6),
+                Card(Color.PAGODE, 7),
+            ],
+            [
+                {
+                    Card(Color.JADE, 3),
+                    Card(Color.PAGODE, 4),
+                    Card(Color.SWORD, 5),
+                    Card(Color.JADE, 6),
+                    Card(Color.PAGODE, 7),
+                },
+            ],
+        ),
+        (
+            Combination(CombinationType.STRAIGHT, 6, 5),
+            [
+                Card(Color.JADE, 3),
+                Card(Color.PAGODE, 4),
+                Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+                Card(Color.JADE, 6),
+                Card(Color.PAGODE, 7),
+            ],
+            [
+                {
+                    Card(Color.JADE, 3),
+                    Card(Color.PAGODE, 4),
+                    Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+                    Card(Color.JADE, 6),
+                    Card(Color.PAGODE, 7),
+                },
+            ],
+        ),
+        (
+            Combination(CombinationType.STRAIGHT, 6, 5),
+            [
+                Card(Color.JADE, 3),
+                Card(Color.PAGODE, 4),
+                Card(Color.SWORD, 5),
+                Card(Color.JADE, 6),
+                Card(Color.PAGODE, 7),
+                Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+            ],
+            [
+                {
+                    Card(Color.JADE, 3),
+                    Card(Color.PAGODE, 4),
+                    Card(Color.SWORD, 5),
+                    Card(Color.JADE, 6),
+                    Card(Color.PAGODE, 7),
+                },
+                {
+                    Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+                    Card(Color.PAGODE, 4),
+                    Card(Color.SWORD, 5),
+                    Card(Color.JADE, 6),
+                    Card(Color.PAGODE, 7),
+                },
+                {
+                    Card(Color.JADE, 3),
+                    Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+                    Card(Color.SWORD, 5),
+                    Card(Color.JADE, 6),
+                    Card(Color.PAGODE, 7),
+                },
+                {
+                    Card(Color.JADE, 3),
+                    Card(Color.PAGODE, 4),
+                    Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+                    Card(Color.JADE, 6),
+                    Card(Color.PAGODE, 7),
+                },
+                {
+                    Card(Color.JADE, 3),
+                    Card(Color.PAGODE, 4),
+                    Card(Color.SWORD, 5),
+                    Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+                    Card(Color.PAGODE, 7),
+                },
+                {
+                    Card(Color.JADE, 3),
+                    Card(Color.PAGODE, 4),
+                    Card(Color.SWORD, 5),
+                    Card(Color.JADE, 6),
+                    Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+                },
+                {
+                    Card(Color.PAGODE, 4),
+                    Card(Color.SWORD, 5),
+                    Card(Color.JADE, 6),
+                    Card(Color.PAGODE, 7),
+                    Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+                },
+            ],
+        ),
     ],
 )
 def test_possible_plays(
@@ -1062,5 +1227,5 @@ def test_possible_plays(
     expected,
 ):
     possible_plays = Combination.possible_plays(combination, cards)
-    assert all(expected_play in possible_plays for expected_play in expected)
     assert len(expected) == len(possible_plays)
+    assert all(expected_play in possible_plays for expected_play in expected)
