@@ -320,8 +320,11 @@ class TestNextTurnSpecialCards:
         ):
             game.next_turn()
 
-        # Winning player should be updated
-        assert game.winning_player_idx == 2
+        # Winning player should not be updated
+        assert game.winning_player_idx == 3
+        assert game.players[2].card_stack == [
+            Card(Color.SPECIAL, SpecialCard.DRAGON.value)
+        ]
 
 
 class TestNextTurnWish:

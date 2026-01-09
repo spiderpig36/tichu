@@ -254,10 +254,11 @@ class Tichu:
                                     "Cannot give the dragon stack to your teammate. Try again."
                                 )
                                 recipient_id = None
-                            else:
-                                self.winning_player_idx = recipient_id
+
+                        self.players[recipient_id].card_stack.extend(self.card_stack)
+                    else:
+                        self.winning_player.card_stack.extend(self.card_stack)
                     self.current_combination = None
-                    self.winning_player.card_stack.extend(self.card_stack)
                     self.card_stack.clear()
                     self.current_player_idx = self.winning_player_idx
                     return

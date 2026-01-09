@@ -60,3 +60,6 @@ class Card:
 
     def __repr__(self):
         return f"Card(color={self.color}, value={self.value})"
+
+    def __eq__(self, value):
+        return self.color == value.color and self.value == value.value
