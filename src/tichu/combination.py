@@ -445,5 +445,56 @@ class Combination:
                                 )
                             straight_plays = new_plays
                         possible_combinations.extend(straight_plays)
+        if (
+            combination is None
+            or combination.combination_type == CombinationType.FULL_HOUSE
+        ):
+            triple_combos = {
+                val: [set(combo) for combo in combinations(bucket, 3)]
+                for val, bucket in card_buckets.items()
+                if len(bucket) >= 3
+            }
+            pair_combos = {
+                val: [set(combo) for combo in combinations(bucket, 2)]
+                for val, bucket in card_buckets.items()
+                if len(bucket) >= 2
+            }
+            single_combos = {
+                val: [{card} for card in bucket]
+                for val, bucket in card_buckets.items()
+                if len(bucket) >= 1
+            }
+
+            for triple_val, triple_combo in triple_combos.items():
+                for pair_val, pair_combo in pair_combos.items():
+                    if triple_val != pair_val:
+                        possible_combinations.extend(
+                            [
+                                triple | pair
+                                for triple in triple_combo
+                                for pair in pair_combo
+                            ]
+                        )
+                if has_phoenix:
+                    for single_val, single_combo in single_combos.items():
+                        if triple_val != single_val:
+                            possible_combinations.extend(
+                                [
+                                    triple | single | {phoenix_card}
+                                    for triple in triple_combo
+                                    for single in single_combo
+                                ]
+                            )
+            if has_phoenix:
+                for pair_val, pair_combo in pair_combos.items():
+                    for pair_val_2, pair_combo_2 in pair_combos.items():
+                        if pair_val > pair_val_2:
+                            possible_combinations.extend(
+                                [
+                                    pair | pair_2 | {phoenix_card}
+                                    for pair in pair_combo
+                                    for pair_2 in pair_combo_2
+                                ]
+                            )
 
         return possible_combinations
