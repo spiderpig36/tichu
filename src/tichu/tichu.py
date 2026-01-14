@@ -1,7 +1,15 @@
 import random
 import sys
-from typing import IO, Literal
+from typing import IO
 
+from tichu import (
+    GRAND_TICHU_HAND_SIZE,
+    GRAND_TICHU_SCORE,
+    HAND_SIZE,
+    MATCH_SCORE,
+    NUM_PLAYERS,
+    TICHU_SCORE,
+)
 from tichu.card import NORMAL_CARD_VALUES, Card, Color, SpecialCard
 from tichu.combination import Combination, CombinationType
 from tichu.player import Player
@@ -24,14 +32,6 @@ class TichuError(Exception):
 
 class InvalidPlayError(TichuError):
     """Raised when a player makes an invalid play."""
-
-
-NUM_PLAYERS = 4
-TICHU_SCORE = 100
-GRAND_TICHU_SCORE = 200
-MATCH_SCORE = 200
-HAND_SIZE = 14
-GRAND_TICHU_HAND_SIZE = 8
 
 
 class Tichu:
@@ -71,12 +71,14 @@ class Tichu:
             player.add_card(card)
             if (
                 len(player.hand) == GRAND_TICHU_HAND_SIZE
-                and self.get_grand_tichu() == "grand_tichu"
+                and player.get_grand_tichu_play() == "grand_tichu"
             ):
                 player.grand_tichu_called = True
 
         for player in self.players:
             player.hand.sort(key=lambda c: c.value)
+
+        self.push_cards()
 
         self.current_player_idx = next(
             i for i, p in enumerate(self.players) if p.has_mahjong()
@@ -97,85 +99,6 @@ class Tichu:
             return None
         return self.players[self.winning_player_idx]
 
-    def get_play(self) -> Literal["pass", "tichu"] | set[int]:
-        prompt = input(
-            "Enter the index of the card to play separated by a comma, 'pass' or 'tichu': "
-        )
-        if prompt.lower() == "pass":
-            return "pass"
-        if prompt.lower() == "tichu":
-            return "tichu"
-        try:
-            card_indices = [int(idx.strip()) for idx in prompt.split(",")]
-            return set(card_indices)
-        except ValueError:
-            self.output_manager.write(
-                "Invalid input. Please enter valid card indices separated by commas. Try again."
-            )
-            return self.get_play()
-
-    def get_grand_tichu(self) -> Literal["pass", "grand_tichu"]:
-        prompt = input("Enter 'grand_tichu' to call a grand tichu or 'pass': ").lower()
-        if prompt == "pass":
-            return "pass"
-        if prompt == "grand_tichu":
-            return "grand_tichu"
-        self.output_manager.write(
-            "Invalid input. Please enter 'pass' or 'grand_tichue'. Try again."
-        )
-        return self.get_grand_tichu()
-
-    def get_dragon_stack_recipient(self) -> int:
-        recipient = input(
-            "Enter the index of the player who will receive the dragon stack: "
-        )
-        try:
-            return int(recipient)
-        except ValueError:
-            self.output_manager.write(
-                "Invalid input. Please enter a valid player index. Try again."
-            )
-            return self.get_dragon_stack_recipient()
-
-    def get_mahjong_wish(self) -> int:
-        wish = input("Enter the value of the card you wish for (2-14): ")
-        try:
-            value = int(wish)
-            if value in NORMAL_CARD_VALUES:
-                return value
-            self.output_manager.write(
-                "Invalid input. Please enter a value between 2 and 14."
-            )
-            return self.get_mahjong_wish()
-        except ValueError:
-            self.output_manager.write(
-                "Invalid input. Please enter a numeric card value. Try again."
-            )
-            return self.get_mahjong_wish()
-
-    def get_push(self) -> set[int]:
-        push = input(
-            "Enter cards to push, first player to the left, next partner player and last player to the right, separated by commas: "
-        )
-        try:
-            card_indices = [int(idx.strip()) for idx in push.split(",")]
-            if len(card_indices) != NUM_PLAYERS - 1:
-                self.output_manager.write(
-                    "You must enter exactly three card indices. Try again."
-                )
-                return self.get_push()
-            if not all(0 <= idx < HAND_SIZE for idx in card_indices):
-                self.output_manager.write(
-                    "One or more card indices are out of range. Try again."
-                )
-                return self.get_push()
-            return set(card_indices)
-        except ValueError:
-            self.output_manager.write(
-                "Invalid input. Please enter valid card indices separated by commas. Try again."
-            )
-            return self.get_push()
-
     @property
     def end_of_round(self) -> bool:
         return len(self.player_rankings) == NUM_PLAYERS - 1 or (
@@ -186,7 +109,7 @@ class Tichu:
     def push_cards(self):
         cards_for_players = [[], [], [], []]
         for player_idx, player in enumerate(self.players):
-            card_indices = self.get_push()
+            card_indices = player.get_push_play()
             cards_to_push = [
                 card
                 for card_idx, card in enumerate(player.hand)
@@ -210,7 +133,7 @@ class Tichu:
             )
         else:
             current_hand = self.current_player.hand
-            play = self.get_play()
+            play = self.current_player.get_card_play()
             if play == "pass":
                 if self.current_wish is not None and Combination.can_fulfill_wish(
                     self.current_combination, self.current_wish, current_hand
@@ -243,7 +166,9 @@ class Tichu:
                         )
                         recipient_id = None
                         while not recipient_id:
-                            recipient_id = self.get_dragon_stack_recipient()
+                            recipient_id = (
+                                self.winning_player.get_dragon_stack_recipient_play()
+                            )
                             if recipient_id < 0 or recipient_id >= NUM_PLAYERS:
                                 self.output_manager.write(
                                     "Invalid player index. Try again."
@@ -352,7 +277,7 @@ class Tichu:
                     self.current_combination.combination_type == CombinationType.SINGLE
                     and self.current_combination.value == SpecialCard.MAH_JONG.value
                 ):
-                    self.current_wish = self.get_mahjong_wish()
+                    self.current_wish = self.current_player.get_mahjong_wish_play()
                     self.output_manager.write(
                         f"{self.current_player.name} wishes for card value {self.current_wish}."
                     )

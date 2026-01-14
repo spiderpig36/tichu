@@ -20,8 +20,9 @@ def game() -> Tichu:
     """Create a game instance and start a new round."""
     output = StringIO()
     game_instance = Tichu(seed=42, output=output)
-    with patch.object(game_instance, "get_grand_tichu", return_value="pass"):
-        game_instance.start_new_round()
+    with patch("tichu.player.Player.get_grand_tichu_play", return_value="pass"):
+        with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
+            game_instance.start_new_round()
     return game_instance
 
 
@@ -29,9 +30,12 @@ class TestStartNewRound:
     def test_grand_tichu_called(self):
         output = StringIO()
         game = Tichu(seed=42, output=output)
-        with patch.object(game, "get_grand_tichu") as mock_grand_tichu:
-            mock_grand_tichu.side_effect = ["grand_tichu", "pass", "pass", "pass"]
-            game.start_new_round()
+        with patch(
+            "tichu.player.Player.get_grand_tichu_play",
+            side_effect=["grand_tichu", "pass", "pass", "pass"],
+        ):
+            with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
+                game.start_new_round()
 
         assert game.players[0].grand_tichu_called
         assert not game.players[1].grand_tichu_called
@@ -53,7 +57,7 @@ class TestNextTurnPass:
         game.current_player_idx = 0
         initial_player_id = game.current_player_idx
 
-        with patch.object(game, "get_play", return_value="pass"):
+        with patch.object(game.current_player, "get_card_play", return_value="pass"):
             game.next_turn()
 
         # Player should have marked as passed
@@ -71,13 +75,14 @@ class TestNextTurnPass:
         game.current_combination.combination_type = CombinationType.SINGLE
         game.current_combination.value = 5
 
-        with patch.object(game, "get_play", return_value="pass"):
+        with patch("tichu.player.Player.get_card_play", return_value="pass"):
             game.next_turn()
             game.next_turn()
             game.next_turn()
 
         # Combination should be reset
         assert game.current_combination is None
+        assert game.current_player_idx == 0
         # All players should be unmarked as passed
         assert all(not player.has_passed for player in game.players)
 
@@ -91,7 +96,7 @@ class TestNextTurnTichu:
         player = game.current_player
         initial_hand_size = len(player.hand)
 
-        with patch.object(game, "get_play", return_value="tichu"):
+        with patch.object(player, "get_card_play", return_value="tichu"):
             game.next_turn()
 
         # Tichu should be marked as called
@@ -107,7 +112,7 @@ class TestNextTurnTichu:
         player.hand.pop()
 
         with (
-            patch.object(game, "get_play", return_value="tichu"),
+            patch.object(player, "get_card_play", return_value="tichu"),
             pytest.raises(InvalidPlayError),
         ):
             game.next_turn()
@@ -124,7 +129,7 @@ class TestNextTurnPlayCard:
         initial_hand_size = len(player.hand)
 
         # Play the first card
-        with patch.object(game, "get_play", return_value={0}):
+        with patch.object(player, "get_card_play", return_value={0}):
             game.next_turn()
 
         # Hand size should decrease
@@ -154,7 +159,7 @@ class TestNextTurnPlayCard:
         play_set = {pair_indices[0], pair_indices[1]}
         initial_hand_size = len(player.hand)
 
-        with patch.object(game, "get_play", return_value=play_set):
+        with patch.object(player, "get_card_play", return_value=play_set):
             game.next_turn()
 
         assert len(player.hand) == initial_hand_size - 2
@@ -176,7 +181,9 @@ class TestNextTurnPlayCard:
         valid_card_indices = [i for i, card in enumerate(player.hand) if card.value > 5]
 
         initial_hand_size = len(player.hand)
-        with patch.object(game, "get_play", return_value={valid_card_indices[0]}):
+        with patch.object(
+            player, "get_card_play", return_value={valid_card_indices[0]}
+        ):
             game.next_turn()
 
         assert len(player.hand) == initial_hand_size - 1
@@ -201,7 +208,7 @@ class TestNextTurnPlayCard:
 
         assert valid_card_indices
         with (
-            patch.object(game, "get_play", return_value={valid_card_indices[0]}),
+            patch.object(player, "get_card_play", return_value={valid_card_indices[0]}),
             pytest.raises(InvalidPlayError),
         ):
             game.next_turn()
@@ -219,7 +226,7 @@ class TestNextTurnPlayCard:
 
         # Try to play a single card
         with (
-            patch.object(game, "get_play", return_value={0}),
+            patch.object(game.current_player, "get_card_play", return_value={0}),
             pytest.raises(InvalidPlayError),
         ):
             game.next_turn()
@@ -242,7 +249,7 @@ class TestNextTurnPlayCard:
             Card(Color.SWORD, 9),
             Card(Color.STAR, 9),
         ]
-        with patch.object(game, "get_play", return_value={0, 1, 2, 3}):
+        with patch.object(player, "get_card_play", return_value={0, 1, 2, 3}):
             game.next_turn()
             game.winning_player_idx = 1
             game.current_combination.type = CombinationType.BOMB
@@ -258,7 +265,7 @@ class TestNextTurnSpecialCards:
         game.current_player_idx = 0
         game.current_player.hand[0] = Card(Color.SPECIAL, SpecialCard.DOG.value)
 
-        with patch.object(game, "get_play", return_value={0}):
+        with patch.object(game.current_player, "get_card_play", return_value={0}):
             game.next_turn()
 
         # Next player should be teammate (2 positions ahead)
@@ -274,7 +281,7 @@ class TestNextTurnSpecialCards:
         # Replace first card with Phoenix
         game.current_player.hand[0] = Card(Color.SPECIAL, SpecialCard.PHOENIX.value)
 
-        with patch.object(game, "get_play", return_value={0}):
+        with patch.object(game.current_player, "get_card_play", return_value={0}):
             game.next_turn()
 
         # Combination should be set with Phoenix
@@ -290,8 +297,8 @@ class TestNextTurnSpecialCards:
         game.current_player.hand[0] = Card(Color.SPECIAL, SpecialCard.MAH_JONG.value)
 
         with (
-            patch.object(game, "get_play", return_value={0}),
-            patch.object(game, "get_mahjong_wish", return_value=7),
+            patch.object(game.current_player, "get_card_play", return_value={0}),
+            patch.object(game.current_player, "get_mahjong_wish_play", return_value=7),
         ):
             game.next_turn()
 
@@ -315,13 +322,16 @@ class TestNextTurnSpecialCards:
         game.current_combination.value = SpecialCard.DRAGON.value
 
         with (
-            patch.object(game, "get_play", return_value="pass"),
-            patch.object(game, "get_dragon_stack_recipient", return_value=2),
+            patch.object(game.current_player, "get_card_play", return_value="pass"),
+            patch.object(
+                game.current_player, "get_dragon_stack_recipient_play", return_value=2
+            ),
         ):
             game.next_turn()
 
         # Winning player should not be updated
         assert game.winning_player_idx == 3
+        assert game.current_player_idx == 3
         assert game.players[2].card_stack == [
             Card(Color.SPECIAL, SpecialCard.DRAGON.value)
         ]
@@ -340,7 +350,7 @@ class TestNextTurnWish:
         game.current_player_idx = 1
         game.current_player.hand = [Card(Color.PAGODE, 14)]
 
-        with patch.object(game, "get_play", return_value={0}):
+        with patch.object(game.current_player, "get_card_play", return_value={0}):
             game.next_turn()
 
     def test_player_can_not_play_card_if_wish_is_possible(self, game):
@@ -362,7 +372,7 @@ class TestNextTurnWish:
         ]
 
         with (
-            patch.object(game, "get_play", return_value={0}),
+            patch.object(game.current_player, "get_card_play", return_value={0}),
             pytest.raises(InvalidPlayError),
         ):
             game.next_turn()
@@ -390,7 +400,9 @@ class TestNextTurnEdgeCases:
         hand_size = len(game.current_player.hand)
 
         with (
-            patch.object(game, "get_play", return_value={hand_size + 10}),
+            patch.object(
+                game.current_player, "get_card_play", return_value={hand_size + 10}
+            ),
             pytest.raises(InvalidPlayError),
         ):  # index out of range
             game.next_turn()
@@ -400,7 +412,7 @@ class TestNextTurnEdgeCases:
 
         initial_player_id = game.current_player_idx
 
-        with patch.object(game, "get_play", return_value={2}):
+        with patch.object(game.current_player, "get_card_play", return_value={2}):
             game.next_turn()
 
         # Current player should advance
@@ -410,8 +422,9 @@ class TestNextTurnEdgeCases:
         """Test that games with same seed produce same hand distributions."""
         output1 = StringIO()
         game1 = Tichu(seed=123, output=output1)
-        with patch.object(game1, "get_grand_tichu", return_value="pass"):
-            game1.start_new_round()
+        with patch("tichu.player.Player.get_grand_tichu_play", return_value="pass"):
+            with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
+                game1.start_new_round()
         hands1 = [
             [(card.color, card.value) for card in player.hand]
             for player in game1.players
@@ -419,8 +432,9 @@ class TestNextTurnEdgeCases:
 
         output2 = StringIO()
         game2 = Tichu(seed=123, output=output2)
-        with patch.object(game2, "get_grand_tichu", return_value="pass"):
-            game2.start_new_round()
+        with patch("tichu.player.Player.get_grand_tichu_play", return_value="pass"):
+            with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
+                game2.start_new_round()
         hands2 = [
             [(card.color, card.value) for card in player.hand]
             for player in game2.players
@@ -439,7 +453,7 @@ class TestNextTurnGameFlow:
         game.current_player_idx = 0
         initial_stack_size = len(game.card_stack)
 
-        with patch.object(game, "get_play", return_value={0}):
+        with patch.object(game.current_player, "get_card_play", return_value={0}):
             game.next_turn()
 
         # Card stack should have increased
@@ -451,7 +465,7 @@ class TestNextTurnGameFlow:
         game.current_player_idx = 1
         game.winning_player_idx = None
 
-        with patch.object(game, "get_play", return_value={0}):
+        with patch.object(game.current_player, "get_card_play", return_value={1}):
             game.next_turn()
 
         # Winning player should be updated to current player
@@ -462,7 +476,7 @@ class TestNextTurnGameFlow:
 
         assert game.current_combination is None
 
-        with patch.object(game, "get_play", return_value={0}):
+        with patch.object(game.current_player, "get_card_play", return_value={1}):
             game.next_turn()
 
         # Current combination should be set
@@ -606,8 +620,9 @@ class TestEndRoundScoring:
         first_round_team_0_score = game.scores[0]
 
         # Reset for second round
-        with patch.object(game, "get_grand_tichu", return_value="pass"):
-            game.start_new_round()
+        with patch("tichu.player.Player.get_grand_tichu_play", return_value="pass"):
+            with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
+                game.start_new_round()
         game.player_rankings = [1, 3]
         game.end_round_scoring()
 
@@ -651,7 +666,7 @@ class TestPushCards:
 
         original_hand_size = len(game.players[0].hand)
 
-        with patch.object(game, "get_push", return_value={0, 1, 2}):
+        with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
             game.push_cards()
 
         for player in game.players:
@@ -663,7 +678,7 @@ class TestPushCards:
         # Save original hands
         original_hands = [player.hand.copy() for player in game.players]
 
-        with patch.object(game, "get_push", return_value={0, 1, 2}):
+        with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
             game.push_cards()
 
         # Verify all cards still exist in the game
@@ -686,7 +701,7 @@ class TestPushCards:
         card_1 = game.players[0].hand[1]
         card_2 = game.players[0].hand[2]
 
-        with patch.object(game, "get_push") as mock_get_push:
+        with patch("tichu.player.Player.get_push_play") as mock_get_push:
             mock_get_push.side_effect = [
                 {0, 1, 2},
                 {10, 11, 12},
@@ -711,7 +726,7 @@ class TestPushCards:
 
         call_sequence = []
 
-        with patch.object(game, "get_push") as mock_get_push:
+        with patch("tichu.player.Player.get_push_play") as mock_get_push:
             mock_get_push.side_effect = [{0, 1, 2}, {0, 1, 2}, {0, 1, 2}, {0, 1, 2}]
             game.push_cards()
             call_sequence = list(mock_get_push.call_args_list)

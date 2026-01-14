@@ -1,3 +1,4 @@
+from functools import reduce
 import math
 import random
 from tqdm import tqdm
@@ -10,6 +11,28 @@ from tichu.tichu import NUM_PLAYERS, Tichu
 def get_probability_for_combination(
     remaining_cards: list[Card], hand_size: int, play: list[Card]
 ):
+    if all([card in remaining_cards for card in play]):
+        return math.comb(
+            len(remaining_cards) - len(play), hand_size - len(play)
+        ) / math.comb(len(remaining_cards), hand_size)
+    else:
+        return 0
+
+
+def get_probability_for_combination_excluding_others(
+    remaining_cards: list[Card],
+    hand_size: int,
+    play: list[Card],
+    impossible_plays: list[list[Card]],
+):
+    probability_impossible_plays = 1 - reduce(
+        lambda x, y: x * y,
+        [
+            get_probability_for_combination(remaining_cards, hand_size, play)
+            for play in impossible_plays
+        ],
+        1,
+    )
     if all([card in remaining_cards for card in play]):
         return math.comb(
             len(remaining_cards) - len(play), hand_size - len(play)
