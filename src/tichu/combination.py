@@ -302,11 +302,11 @@ class Combination:
         cards: list[Card],
     ) -> list[set[Card]]:
         min_value = round(combination.value + 1) if combination else 0
-        card_count = Combination.get_card_count(cards)
         card_buckets: dict[int, set[Card]] = defaultdict(set)
         for card in cards:
             if card.color != Color.SPECIAL or card.value == SpecialCard.MAH_JONG.value:
                 card_buckets[card.value].add(card)
+        straight_values = sorted(card_buckets.keys())
         has_phoenix = SpecialCard.PHOENIX.value in [card.value for card in cards]
         phoenix_card = Card(Color.SPECIAL, SpecialCard.PHOENIX.value)
         has_dragon = SpecialCard.DRAGON.value in [card.value for card in cards]
@@ -389,7 +389,6 @@ class Combination:
             combination is None
             or combination.combination_type == CombinationType.STRAIGHT
         ):
-            straight_values = sorted(card_buckets.keys())
             for length in range(
                 combination.length if combination else STRAIGHT_MIN_SIZE,
                 combination.length + 1 if combination else 14,
@@ -408,9 +407,9 @@ class Combination:
 
                         straight_plays: list[set[Card]] = []
                         for val in range(window_start, window_end + 1):
-                            stair_plays = []
+                            new_plays = []
                             for card in card_buckets[val]:
-                                stair_plays.extend(
+                                new_plays.extend(
                                     [
                                         play | {card}
                                         for play in (
@@ -421,7 +420,7 @@ class Combination:
                                     ]
                                 )
                             if len(card_buckets[val]) == 0:
-                                stair_plays.extend(
+                                new_plays.extend(
                                     [
                                         play | {phoenix_card}
                                         for play in (
@@ -432,7 +431,7 @@ class Combination:
                                     ]
                                 )
                             if has_phoenix and len(window) == length:
-                                stair_plays.extend(
+                                new_plays.extend(
                                     [
                                         play | {phoenix_card}
                                         for play in (
@@ -443,8 +442,59 @@ class Combination:
                                         if phoenix_card not in play
                                     ]
                                 )
-                            straight_plays = stair_plays
+                            straight_plays = new_plays
                         possible_combinations.extend(straight_plays)
+        else:
+            for length in range(
+                (
+                    combination.length
+                    if combination.combination_type == CombinationType.STRAIGHT_BOMB
+                    else STRAIGHT_MIN_SIZE
+                ),
+                14,
+            ):
+                for i in range(
+                    14,
+                    max(
+                        (
+                            min_value
+                            if combination.combination_type
+                            == CombinationType.STRAIGHT_BOMB
+                            else 0
+                        ),
+                        length,
+                    )
+                    - 1,
+                    -1,
+                ):
+                    window_start = i - (length - 1)
+                    window_end = i
+                    window = [
+                        val
+                        for val in straight_values
+                        if window_start <= val <= window_end
+                    ]
+                    if len(window) == length:
+                        straight_bomb_plays: list[list[Card]] = []
+                        for val in range(window_start, window_end + 1):
+                            new_bomb_plays: list[list[Card]] = []
+                            for card in card_buckets[val]:
+                                new_bomb_plays.extend(
+                                    [
+                                        play + [card]
+                                        for play in (
+                                            straight_bomb_plays
+                                            if len(straight_bomb_plays) > 0
+                                            else [[]]
+                                        )
+                                        if len(play) == 0
+                                        or play[-1].color == card.color
+                                    ]
+                                )
+                            straight_bomb_plays = new_bomb_plays
+                        possible_combinations.extend(
+                            [set(play) for play in straight_bomb_plays]
+                        )
         if (
             combination is None
             or combination.combination_type == CombinationType.FULL_HOUSE

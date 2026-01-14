@@ -1149,6 +1149,25 @@ def test_can_fulfill_wish(
             [],
         ),
         (
+            Combination(CombinationType.FULL_HOUSE, 14),
+            [
+                Card(Color.JADE, 2),
+                Card(Color.JADE, 3),
+                Card(Color.JADE, 4),
+                Card(Color.JADE, 5),
+                Card(Color.JADE, 6),
+            ],
+            [
+                {
+                    Card(Color.JADE, 2),
+                    Card(Color.JADE, 3),
+                    Card(Color.JADE, 4),
+                    Card(Color.JADE, 5),
+                    Card(Color.JADE, 6),
+                }
+            ],
+        ),
+        (
             Combination(CombinationType.STRAIGHT, 6, 5),
             [
                 Card(Color.JADE, 3),
