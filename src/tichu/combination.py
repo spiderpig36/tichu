@@ -502,7 +502,7 @@ class Combination:
             triple_combos = {
                 val: [set(combo) for combo in combinations(bucket, 3)]
                 for val, bucket in card_buckets.items()
-                if len(bucket) >= 3
+                if len(bucket) >= 3 and val >= min_value
             }
             pair_combos = {
                 val: [set(combo) for combo in combinations(bucket, 2)]
@@ -538,7 +538,9 @@ class Combination:
             if has_phoenix:
                 for pair_val, pair_combo in pair_combos.items():
                     for pair_val_2, pair_combo_2 in pair_combos.items():
-                        if pair_val > pair_val_2:
+                        if pair_val > pair_val_2 and (
+                            pair_val >= min_value or pair_val_2 >= min_value
+                        ):
                             possible_combinations.extend(
                                 [
                                     pair | pair_2 | {phoenix_card}
@@ -548,7 +550,7 @@ class Combination:
                             )
         if combination is None or combination.combination_type == CombinationType.STAIR:
             stair_plays: list[set[Card]] = []
-            for i in range(0, 15):
+            for i in range(min_value, 15):
                 if len(card_buckets[i]) >= 2 or (
                     has_phoenix and len(card_buckets[i]) >= 1
                 ):
