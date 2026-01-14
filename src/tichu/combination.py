@@ -408,9 +408,9 @@ class Combination:
 
                         straight_plays: list[set[Card]] = []
                         for val in range(window_start, window_end + 1):
-                            new_plays = []
+                            stair_plays = []
                             for card in card_buckets[val]:
-                                new_plays.extend(
+                                stair_plays.extend(
                                     [
                                         play | {card}
                                         for play in (
@@ -421,7 +421,7 @@ class Combination:
                                     ]
                                 )
                             if len(card_buckets[val]) == 0:
-                                new_plays.extend(
+                                stair_plays.extend(
                                     [
                                         play | {phoenix_card}
                                         for play in (
@@ -432,7 +432,7 @@ class Combination:
                                     ]
                                 )
                             if has_phoenix and len(window) == length:
-                                new_plays.extend(
+                                stair_plays.extend(
                                     [
                                         play | {phoenix_card}
                                         for play in (
@@ -443,7 +443,7 @@ class Combination:
                                         if phoenix_card not in play
                                     ]
                                 )
-                            straight_plays = new_plays
+                            straight_plays = stair_plays
                         possible_combinations.extend(straight_plays)
         if (
             combination is None
@@ -496,5 +496,38 @@ class Combination:
                                     for pair_2 in pair_combo_2
                                 ]
                             )
+        if combination is None or combination.combination_type == CombinationType.STAIR:
+            stair_plays: list[set[Card]] = []
+            for i in range(0, 15):
+                if len(card_buckets[i]) >= 2 or (
+                    has_phoenix and len(card_buckets[i]) >= 1
+                ):
+                    new_plays = [
+                        play | set(pair)
+                        for play in stair_plays + [set()]
+                        for pair in combinations(card_buckets[i], 2)
+                    ]
+                    phoenix_plays = []
+                    if has_phoenix:
+                        phoenix_plays = [
+                            play | {card} | {phoenix_card}
+                            for play in stair_plays + [set()]
+                            if phoenix_card not in play
+                            for card in card_buckets[i]
+                        ]
+                    stair_plays = new_plays + phoenix_plays
+                    possible_combinations.extend(
+                        [
+                            play
+                            for play in stair_plays
+                            if (combination is None and len(play) >= 4)
+                            or (
+                                combination is not None
+                                and len(play) == combination.length * 2
+                            )
+                        ]
+                    )
+                else:
+                    stair_plays = []
 
         return possible_combinations

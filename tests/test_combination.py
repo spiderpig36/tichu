@@ -1143,6 +1143,16 @@ def test_can_fulfill_wish(
             [
                 Card(Color.JADE, 3),
                 Card(Color.PAGODE, 4),
+                Card(Color.JADE, 6),
+                Card(Color.PAGODE, 7),
+            ],
+            [],
+        ),
+        (
+            Combination(CombinationType.STRAIGHT, 6, 5),
+            [
+                Card(Color.JADE, 3),
+                Card(Color.PAGODE, 4),
                 Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
                 Card(Color.JADE, 6),
                 Card(Color.PAGODE, 7),
@@ -1345,6 +1355,105 @@ def test_can_fulfill_wish(
                     Card(Color.STAR, 8),
                     Card(Color.JADE, 8),
                     Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+                },
+            ],
+        ),
+        (
+            Combination(CombinationType.FULL_HOUSE, 6),
+            [
+                Card(Color.JADE, 7),
+                Card(Color.PAGODE, 7),
+                Card(Color.SWORD, 7),
+                Card(Color.STAR, 8),
+                Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+            ],
+            [
+                {
+                    Card(Color.JADE, 7),
+                    Card(Color.PAGODE, 7),
+                    Card(Color.SWORD, 7),
+                    Card(Color.STAR, 8),
+                    Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+                },
+            ],
+        ),
+        (
+            Combination(CombinationType.STAIR, 6, 2),
+            [
+                Card(Color.JADE, 7),
+                Card(Color.PAGODE, 7),
+                Card(Color.STAR, 8),
+                Card(Color.SWORD, 8),
+            ],
+            [
+                {
+                    Card(Color.JADE, 7),
+                    Card(Color.PAGODE, 7),
+                    Card(Color.STAR, 8),
+                    Card(Color.SWORD, 8),
+                },
+            ],
+        ),
+        (
+            Combination(CombinationType.STAIR, 6, 3),
+            [
+                Card(Color.JADE, 7),
+                Card(Color.PAGODE, 7),
+                Card(Color.STAR, 8),
+                Card(Color.SWORD, 8),
+                Card(Color.STAR, 9),
+                Card(Color.SWORD, 9),
+            ],
+            [
+                {
+                    Card(Color.JADE, 7),
+                    Card(Color.PAGODE, 7),
+                    Card(Color.STAR, 8),
+                    Card(Color.SWORD, 8),
+                    Card(Color.STAR, 9),
+                    Card(Color.SWORD, 9),
+                },
+            ],
+        ),
+        (
+            Combination(CombinationType.STAIR, 6, 2),
+            [
+                Card(Color.JADE, 7),
+                Card(Color.PAGODE, 7),
+                Card(Color.STAR, 8),
+                Card(Color.SWORD, 8),
+                Card(Color.STAR, 9),
+                Card(Color.SWORD, 9),
+            ],
+            [
+                {
+                    Card(Color.JADE, 7),
+                    Card(Color.PAGODE, 7),
+                    Card(Color.STAR, 8),
+                    Card(Color.SWORD, 8),
+                },
+                {
+                    Card(Color.STAR, 8),
+                    Card(Color.SWORD, 8),
+                    Card(Color.STAR, 9),
+                    Card(Color.SWORD, 9),
+                },
+            ],
+        ),
+        (
+            Combination(CombinationType.STAIR, 6, 2),
+            [
+                Card(Color.JADE, 7),
+                Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+                Card(Color.STAR, 8),
+                Card(Color.SWORD, 8),
+            ],
+            [
+                {
+                    Card(Color.JADE, 7),
+                    Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+                    Card(Color.STAR, 8),
+                    Card(Color.SWORD, 8),
                 },
             ],
         ),
