@@ -46,7 +46,7 @@ class Tichu:
         self.random = random.Random(seed)
 
         self.current_player_idx: int = 0
-        self.winning_player_idx: int | None = None
+        self.winning_player_idx: int = 0
         self.current_combination: Combination | None = None
         self.current_wish: int | None = None
         self.card_stack: list[Card] = []
@@ -83,7 +83,7 @@ class Tichu:
         self.current_player_idx = next(
             i for i, p in enumerate(self.players) if p.has_mahjong()
         )
-        self.winning_player_idx = None
+        self.winning_player_idx = self.current_player_idx
         self.current_combination = None
         self.current_wish = None
         self.card_stack.clear()
@@ -94,15 +94,13 @@ class Tichu:
         return self.players[self.current_player_idx]
 
     @property
-    def winning_player(self) -> Player | None:
-        if self.winning_player_idx is None:
-            return None
+    def winning_player(self) -> Player:
         return self.players[self.winning_player_idx]
 
     @property
     def end_of_round(self) -> bool:
         return len(self.player_rankings) == NUM_PLAYERS - 1 or (
-            len(self.player_rankings) == NUM_PLAYERS / 2
+            len(self.player_rankings) == NUM_PLAYERS // 2
             and self.player_rankings[0] % 2 == self.player_rankings[1] % 2
         )
 
@@ -151,8 +149,6 @@ class Tichu:
                     self.output_manager.write(
                         "All other players have passed. Resetting current combination."
                     )
-                    if self.winning_player_idx is None or self.winning_player is None:
-                        return
                     for player in self.players:
                         player.has_passed = False
                     if (
@@ -185,8 +181,6 @@ class Tichu:
                         self.winning_player.card_stack.extend(self.card_stack)
                     self.current_combination = None
                     self.card_stack.clear()
-                    self.current_player_idx = self.winning_player_idx
-                    return
             elif play == "tichu":
                 if self.current_player.grand_tichu_called:
                     msg = "Grand Tichu was already called."
