@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-
 NUM_PLAYERS = 4
 TICHU_SCORE = 100
 GRAND_TICHU_SCORE = 200
