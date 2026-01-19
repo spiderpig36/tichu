@@ -30,7 +30,7 @@ class Card:
             msg = "Card value for normal cards must be between 2 and 14."
             raise ValueError(msg)
         if color == Color.SPECIAL and value not in SpecialCard.values():
-            msg = "Special cards can only have values 0 (Dog), 1, 15 (Phoenix), or 16 (Dragon)."
+            msg = "Special cards can only have values 0 (Dog), 1, 50 (Phoenix), or 100 (Dragon)."
             raise ValueError(msg)
         self.value = value
 

@@ -1003,6 +1003,11 @@ def test_can_fulfill_wish(
             ],
         ),
         (
+            Combination(CombinationType.PAIR, 8, 1),
+            [Card(Color.JADE, 7), Card(Color.SPECIAL, SpecialCard.PHOENIX.value)],
+            [],
+        ),
+        (
             None,
             [Card(Color.JADE, 7), Card(Color.PAGODE, 7), Card(Color.SWORD, 7)],
             [
@@ -1249,6 +1254,18 @@ def test_can_fulfill_wish(
             ],
         ),
         (
+            Combination(CombinationType.STRAIGHT, 9, 5),
+            [
+                Card(Color.JADE, 3),
+                Card(Color.PAGODE, 4),
+                Card(Color.SWORD, 5),
+                Card(Color.JADE, 6),
+                Card(Color.PAGODE, 7),
+                Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+            ],
+            [],
+        ),
+        (
             Combination(CombinationType.FULL_HOUSE, 6),
             [
                 Card(Color.JADE, 7),
@@ -1397,6 +1414,27 @@ def test_can_fulfill_wish(
             ],
         ),
         (
+            Combination(CombinationType.FULL_HOUSE, 6),
+            [
+                Card(Color.JADE, 5),
+                Card(Color.PAGODE, 5),
+                Card(Color.SWORD, 5),
+                Card(Color.STAR, 8),
+                Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+            ],
+            [],
+        ),
+        (
+            Combination(CombinationType.FULL_HOUSE, 6),
+            [
+                Card(Color.JADE, 5),
+                Card(Color.PAGODE, 5),
+                Card(Color.STAR, 8),
+                Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+            ],
+            [],
+        ),
+        (
             Combination(CombinationType.STAIR, 6, 2),
             [
                 Card(Color.JADE, 7),
@@ -1475,6 +1513,16 @@ def test_can_fulfill_wish(
                     Card(Color.SWORD, 8),
                 },
             ],
+        ),
+        (
+            Combination(CombinationType.STAIR, 6, 2),
+            [
+                Card(Color.JADE, 3),
+                Card(Color.SPECIAL, SpecialCard.PHOENIX.value),
+                Card(Color.STAR, 4),
+                Card(Color.SWORD, 4),
+            ],
+            [],
         ),
     ],
 )

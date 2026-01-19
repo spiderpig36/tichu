@@ -86,7 +86,7 @@ class Tichu:
         self.state.current_player_idx = next(
             i for i, p in enumerate(self.players) if p.has_mahjong()
         )
-        self.state.winning_player_idx = None
+        self.state.winning_player_idx = self.state.current_player_idx
         self.state.current_combination = None
         self.state.current_wish = None
         self.state.card_stack.clear()
@@ -97,9 +97,7 @@ class Tichu:
         return self.players[self.state.current_player_idx]
 
     @property
-    def winning_player(self) -> Player | None:
-        if self.state.winning_player_idx is None:
-            return None
+    def winning_player(self) -> Player:
         return self.players[self.state.winning_player_idx]
 
     @property
@@ -158,11 +156,6 @@ class Tichu:
                     self.output_manager.write(
                         "All other players have passed. Resetting current combination."
                     )
-                    if (
-                        self.state.winning_player_idx is None
-                        or self.winning_player is None
-                    ):
-                        return
                     for player in self.players:
                         player.state.has_passed = False
                     if (
@@ -200,8 +193,6 @@ class Tichu:
                         )
                     self.state.current_combination = None
                     self.state.card_stack.clear()
-                    self.state.current_player_idx = self.state.winning_player_idx
-                    return
             elif play == "tichu":
                 if self.current_player.state.grand_tichu_called:
                     msg = "Grand Tichu was already called."

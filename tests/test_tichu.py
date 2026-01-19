@@ -324,12 +324,10 @@ class TestNextTurnSpecialCards:
     def test_play_dragon_triggers_stack_selection(self, game):
         """Test that playing dragon and winning triggers stack recipient selection."""
 
-        game.state.current_player_idx = 3
+        game.state.current_player_idx = 2
         game.state.winning_player_idx = 3
-        game.current_player.state.has_passed = False
         game.players[0].state.has_passed = True
         game.players[1].state.has_passed = True
-        game.players[2].state.has_passed = True
 
         # Replace first card with Dragon
         game.state.card_stack = [Card(Color.SPECIAL, SpecialCard.DRAGON.value)]
@@ -340,7 +338,7 @@ class TestNextTurnSpecialCards:
         with (
             patch.object(game.current_player, "get_card_play", return_value="pass"),
             patch.object(
-                game.current_player, "get_dragon_stack_recipient_play", return_value=2
+                game.winning_player, "get_dragon_stack_recipient_play", return_value=2
             ),
         ):
             game.next_turn()
