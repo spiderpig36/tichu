@@ -348,7 +348,7 @@ if __name__ == "__main__":
         Player(f"Player RANDOM {i}", player_type=PlayerType.RANDOM)
         for i in range(NUM_PLAYERS - 1)
     ]
-    players.append(Player("Player HUMAN", player_type=PlayerType.HUMAN))
+    players.append(Player("Player LLM", player_type=PlayerType.LLM))
     game = Tichu()
     game.new_game(players)
     game.start_new_round()

@@ -6,7 +6,7 @@ from tichu.card import Card
 class PlayerType(Enum):
     HUMAN = "human"
     MINI_MAXI = "mini_maxi"
-    CHAT_GPT = "chat_gpt"
+    LLM = "llm"
     RANDOM = "random"
 
 

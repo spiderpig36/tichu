@@ -20,7 +20,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = ["tqdm"]
+dependencies = ["tqdm", "openai", "dotenv"]
 
 [project.urls]
 Documentation = "https://github.com/Nic Dorner/tichu#readme"

@@ -1,11 +1,21 @@
 import logging
+import os
 import random
 from typing import Literal
+
+from dotenv import load_dotenv
+from openai import OpenAI
+from pydantic import BaseModel
+
 from tichu import HAND_SIZE, NUM_PLAYERS
 from tichu.card import Color, NORMAL_CARD_VALUES
 from tichu.combination import Combination
 from tichu.player_state import PlayerState, PlayerType
 from tichu.tichu_state import TichuState
+
+
+class LLMPlay(BaseModel):
+    play: Literal["pass", "tichu"] | list[int]
 
 
 class Player:
@@ -16,6 +26,12 @@ class Player:
     ):
         self.name = name
         self.state = PlayerState(player_type=player_type)
+        if player_type == PlayerType.LLM:
+            load_dotenv()
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY not found in environment variables.")
+            self.client = OpenAI(api_key=api_key)
 
     def set_game(self, game_state: TichuState):
         self.game_state = game_state
@@ -29,10 +45,61 @@ class Player:
                 return self._get_card_play_human()
             case PlayerType.RANDOM:
                 return self._get_card_play_random()
+            case PlayerType.LLM:
+                return self._get_card_play_llm()
             case _:
                 raise NotImplementedError(
                     f"Player type {self.state.player_type} not implemented yet."
                 )
+
+    def _get_card_play_llm(self) -> Literal["pass", "tichu"] | set[int]:
+        # Load rules from file
+        rules_path = os.path.join(os.path.dirname(__file__), "..", "..", "rules.md")
+        with open(rules_path, "r", encoding="utf-8") as f:
+            rules = f.read()
+
+        prompt = f"""
+Game Rules:
+{rules}
+
+Your Name: {self.name}
+
+{self}
+
+{self.game_state}
+
+Instructions: Decide what to play based on the rules and state. Respond with exactly one of:
+- 'pass' to pass your turn
+- 'tichu' to call Tichu (only if you have a full hand and haven't called Grand Tichu)
+- Comma-separated list of card indices (0-based, e.g., '0,1,2') to play those cards from your hand
+
+Ensure the play is valid according to the rules.
+"""
+
+        try:
+            response = self.client.responses.parse(
+                text_format=LLMPlay,
+                model="gpt-4o-2024-08-06",
+                input=[{"role": "user", "content": prompt}],
+            )
+        except Exception as e:
+            logging.error(f"Error calling LLM: {e}. Defaulting to pass.")
+            return "pass"
+
+        if not response or not response.output_parsed:
+            logging.error("No valid response from LLM. Defaulting to pass.")
+            return "pass"
+        answer = response.output_parsed.play
+        if answer == "pass":
+            return "pass"
+        elif answer == "tichu":
+            return "tichu"
+        else:
+            if answer and all(0 <= idx < len(self.state.hand) for idx in answer):
+                return set(answer)
+            else:
+                logging.error(f"Invalid LLM response: {answer}. Defaulting to pass.")
+                return "pass"
 
     def _get_card_play_human(self) -> Literal["pass", "tichu"] | set[int]:
         play = self._get_input(
@@ -66,6 +133,9 @@ class Player:
                 return self._get_grand_tichu_play_human()
             case PlayerType.RANDOM:
                 return self._get_grand_tichu_play_random()
+            case PlayerType.LLM:
+                # TODO: Implement LLM grand tichu play
+                return "pass"
             case _:
                 raise NotImplementedError(
                     f"Player type {self.state.player_type} not implemented yet."
@@ -88,6 +158,9 @@ class Player:
             case PlayerType.HUMAN:
                 return self._get_dragon_stack_recipient_play_human()
             case PlayerType.RANDOM:
+                return self._get_dragon_stack_recipient_play_random()
+            case PlayerType.LLM:
+                # TODO: Implement LLM dragon stack recipient play
                 return self._get_dragon_stack_recipient_play_random()
             case _:
                 raise NotImplementedError(
@@ -114,6 +187,9 @@ class Player:
             case PlayerType.HUMAN:
                 return self._get_mahjong_wish_play_human()
             case PlayerType.RANDOM:
+                return self._get_mahjong_wish_play_random()
+            case PlayerType.LLM:
+                # TODO: Implement LLM mahjong wish play
                 return self._get_mahjong_wish_play_random()
             case _:
                 raise NotImplementedError(
@@ -144,6 +220,9 @@ class Player:
             case PlayerType.HUMAN:
                 return self._get_push_play_human()
             case PlayerType.RANDOM:
+                return self._get_push_play_random()
+            case PlayerType.LLM:
+                # TODO: Implement LLM push play
                 return self._get_push_play_random()
             case _:
                 raise NotImplementedError(

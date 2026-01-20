@@ -44,6 +44,19 @@ class Combination:
         self.value = value
         self.length = length
 
+    def __str__(self):
+        match self.combination_type:
+            case (
+                CombinationType.SINGLE
+                | CombinationType.PAIR
+                | CombinationType.TRIPLE
+                | CombinationType.BOMB
+                | CombinationType.FULL_HOUSE
+            ):
+                return f"{self.combination_type.name} (Value: {self.value})"
+            case _:
+                return f"{self.combination_type.name} (Value: {self.value}, Length: {self.length})"
+
     def __eq__(self, value):
         return (
             self.combination_type == value.combination_type
