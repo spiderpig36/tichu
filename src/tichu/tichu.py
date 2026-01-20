@@ -1,6 +1,7 @@
+import logging
 import random
 import sys
-from typing import IO
+from typing import IO, Literal
 
 from tichu import (
     GRAND_TICHU_HAND_SIZE,
@@ -12,20 +13,11 @@ from tichu import (
 )
 from tichu.card import NORMAL_CARD_VALUES, Card, Color, SpecialCard
 from tichu.combination import Combination, CombinationType
-from tichu.player import Player
-from tichu.player_state import PlayerType
+from tichu.human_player import HumanPlayer
+from tichu.llm_player import LLMPlayer
+from tichu.random_player import RandomPlayer
+from tichu.player import Play, Player
 from tichu.tichu_state import TichuState
-
-
-class OutputManager:
-    """Manages output to configurable destinations."""
-
-    def __init__(self, output: IO | None = None):
-        self.output = output if output is not None else sys.stdout
-
-    def write(self, message: str):
-        """Write a message to the configured output."""
-        print(message, file=self.output)
 
 
 class TichuError(Exception):
@@ -41,11 +33,10 @@ class Tichu:
         self,
         goal_score: int = 1000,
         seed: int | None = None,
-        output: IO | None = None,
     ):
         self.goal_score = goal_score
-        self.output_manager = OutputManager(output)
         self.random = random.Random(seed)
+        self.play_log: list[tuple[int, Play]] = []
 
     def new_game(self, players: list[Player]):
         self.state = TichuState()
@@ -56,6 +47,7 @@ class Tichu:
             player.set_game(self.state)
 
     def start_new_round(self):
+        self.play_log.clear()
         self.state.current_round += 1
         for player in self.players:
             player.reset_for_new_round()
@@ -126,10 +118,12 @@ class Tichu:
                 player.add_card(card)
             player.state.hand.sort(key=lambda c: c.value)
 
+    def add_play_log_entry(self, play: Play):
+        self.play_log.append((self.state.current_player_idx, play))
+
     def next_turn(self):
-        self.output_manager.write(str(self.current_player))
         if self.state.current_player_idx in self.state.player_rankings:
-            self.output_manager.write(
+            logging.info(
                 f"{self.current_player.name} has no cards left and is skipped!"
             )
         else:
@@ -146,14 +140,15 @@ class Tichu:
                 ):
                     msg = f"You can fulfill the wish for card value {self.state.current_wish} and cannot pass."
                     raise InvalidPlayError(msg)
-                self.output_manager.write(f"{self.current_player.name} has passed.")
+                logging.info(f"{self.current_player.name} has passed.")
+                self.add_play_log_entry(play)
                 self.current_player.state.has_passed = True
                 if all(
                     player.state.has_passed
                     for player in self.players
                     if player != self.winning_player
                 ):
-                    self.output_manager.write(
+                    logging.info(
                         "All other players have passed. Resetting current combination."
                     )
                     for player in self.players:
@@ -165,7 +160,7 @@ class Tichu:
                         and self.state.current_combination.value
                         == SpecialCard.DRAGON.value
                     ):
-                        self.output_manager.write(
+                        logging.info(
                             f"{self.winning_player.name} wins the single card round and collects the card stack."
                         )
                         recipient_id = None
@@ -174,12 +169,10 @@ class Tichu:
                                 self.winning_player.get_dragon_stack_recipient_play()
                             )
                             if recipient_id < 0 or recipient_id >= NUM_PLAYERS:
-                                self.output_manager.write(
-                                    "Invalid player index. Try again."
-                                )
+                                logging.info("Invalid player index. Try again.")
                                 recipient_id = None
                             elif recipient_id % 2 == self.state.winning_player_idx % 2:
-                                self.output_manager.write(
+                                logging.info(
                                     "Cannot give the dragon stack to your teammate. Try again."
                                 )
                                 recipient_id = None
@@ -200,10 +193,9 @@ class Tichu:
                 if len(self.current_player.state.hand) != HAND_SIZE:
                     msg = "Tichu can only be called at the start of a turn with a full hand."
                     raise InvalidPlayError(msg)
-                self.output_manager.write(
-                    f"{self.current_player.name} has called Tichu!"
-                )
+                logging.info(f"{self.current_player.name} has called Tichu!")
                 self.current_player.state.tichu_called = True
+                self.add_play_log_entry(play)
                 return
             else:
                 try:
@@ -226,7 +218,7 @@ class Tichu:
                     raise InvalidPlayError(msg)
                 if self.state.current_wish is not None:
                     if self.state.current_wish in [card.value for card in played_cards]:
-                        self.output_manager.write(
+                        logging.info(
                             f"{self.current_player.name} has fulfilled the wish for card value {self.state.current_wish}."
                         )
                         self.state.current_wish = None
@@ -248,25 +240,21 @@ class Tichu:
                 for card in played_cards:
                     self.current_player.play_card(card)
                 if len(self.current_player.state.hand) == 0:
-                    self.output_manager.write(
+                    logging.info(
                         f"{self.current_player.name} has played all their cards and finished the round!"
                     )
                     self.state.player_rankings.append(self.state.current_player_idx)
                 self.state.card_stack.extend(played_cards)
 
-                self.output_manager.write(
-                    f"Played combination: {self.state.current_combination.combination_type.name}"
-                )
-                self.output_manager.write(
-                    ", ".join([str(card) for card in played_cards])
-                )
+                self.add_play_log_entry(play)
+                logging.info(", ".join([str(card) for card in played_cards]))
 
                 if (
                     self.state.current_combination.combination_type
                     == CombinationType.SINGLE
                     and self.state.current_combination.value == SpecialCard.DOG.value
                 ):
-                    self.output_manager.write(
+                    logging.info(
                         f"{self.current_player.name} played the Dog and passes the turn to their teammate."
                     )
                     self.state.current_player_idx = (
@@ -293,7 +281,7 @@ class Tichu:
                     self.state.current_wish = (
                         self.current_player.get_mahjong_wish_play()
                     )
-                    self.output_manager.write(
+                    logging.info(
                         f"{self.current_player.name} wishes for card value {self.state.current_wish}."
                     )
 
@@ -337,24 +325,24 @@ class Tichu:
                 team_scores[team_id] += Card.count_card_scores(player.state.card_stack)
         for i in range(len(team_scores)):
             self.state.scores[i] += team_scores[i]
-            self.output_manager.write(
+            logging.info(
                 f"Team {i} scored {team_scores[i]} points this round. Total score: {self.state.scores[i]}"
             )
 
 
 if __name__ == "__main__":
-
-    players = [
-        Player(f"Player RANDOM {i}", player_type=PlayerType.RANDOM)
-        for i in range(NUM_PLAYERS - 1)
+    players: list[Player] = [
+        RandomPlayer(f"Player RANDOM {i}") for i in range(NUM_PLAYERS - 1)
     ]
-    players.append(Player("Player LLM", player_type=PlayerType.LLM))
+    players.append(LLMPlayer("Player LLM"))
     game = Tichu()
     game.new_game(players)
     game.start_new_round()
     while not game.end_of_round:
+        print(game.state)
+        print(game.current_player)
         try:
             game.next_turn()
         except InvalidPlayError as e:
-            game.output_manager.write(f"Invalid play: {e}")
+            logging.info(f"Invalid play: {e}")
             continue

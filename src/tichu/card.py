@@ -6,7 +6,7 @@ NORMAL_CARD_VALUES = range(2, 15)
 
 class Color(Enum):
     JADE = 0
-    SWORD = 1
+    SWORDS = 1
     PAGODE = 2
     STAR = 3
     SPECIAL = 4
@@ -54,9 +54,24 @@ class Card:
         return reduce(lambda total, card: total + card.get_score(), cards, 0)
 
     def __str__(self):
-        if self.color == Color.SPECIAL:
-            return SpecialCard(self.value).name
-        return f"{self.color.name}  {self.value}"
+        match self.value:
+            case (
+                SpecialCard.DOG.value
+                | SpecialCard.MAH_JONG.value
+                | SpecialCard.PHOENIX.value
+                | SpecialCard.DRAGON.value
+            ):
+                return SpecialCard(self.value).name
+            case 11:
+                return f"{self.color.name} Jack"
+            case 12:
+                return f"{self.color.name} Queen"
+            case 13:
+                return f"{self.color.name} King"
+            case 14:
+                return f"{self.color.name} Ace"
+            case _:
+                return f"{self.color.name} {self.value}"
 
     def __repr__(self):
         return f"Card(color={self.color}, value={self.value})"

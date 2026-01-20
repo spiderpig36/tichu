@@ -473,7 +473,7 @@ class Combination:
                             min_value
                             if combination.combination_type
                             == CombinationType.STRAIGHT_BOMB
-                            else 0
+                            else length
                         ),
                         length,
                     )
@@ -500,8 +500,11 @@ class Combination:
                                             if len(straight_bomb_plays) > 0
                                             else [[]]
                                         )
-                                        if len(play) == 0
-                                        or play[-1].color == card.color
+                                        if val == window_start
+                                        or (
+                                            len(play) > 0
+                                            and play[-1].color == card.color
+                                        )
                                     ]
                                 )
                             straight_bomb_plays = new_bomb_plays

@@ -5,7 +5,7 @@ import pytest
 
 from tichu.card import Card, Color, SpecialCard
 from tichu.combination import Combination, CombinationType
-from tichu.player import Player, PlayerType
+from tichu.random_player import RandomPlayer
 from tichu.tichu import (
     GRAND_TICHU_SCORE,
     HAND_SIZE,
@@ -19,32 +19,31 @@ from tichu.tichu import (
 @pytest.fixture
 def game() -> Tichu:
     """Create a game instance and start a new round."""
-    output = StringIO()
-    players = [
-        Player(f"Player {i}", player_type=PlayerType.RANDOM) for i in range(NUM_PLAYERS)
-    ]
-    game_instance = Tichu(seed=42, output=output)
+    players = [RandomPlayer(f"Player {i}") for i in range(NUM_PLAYERS)]
+    game_instance = Tichu(seed=42)
     game_instance.new_game(players)
-    with patch("tichu.player.Player.get_grand_tichu_play", return_value="pass"):
-        with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
+    with patch(
+        "tichu.random_player.RandomPlayer.get_grand_tichu_play", return_value="pass"
+    ):
+        with patch(
+            "tichu.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
+        ):
             game_instance.start_new_round()
     return game_instance
 
 
 class TestStartNewRound:
     def test_grand_tichu_called(self):
-        output = StringIO()
-        players = [
-            Player(f"Player {i}", player_type=PlayerType.RANDOM)
-            for i in range(NUM_PLAYERS)
-        ]
-        game = Tichu(seed=42, output=output)
+        players = [RandomPlayer(f"Player {i}") for i in range(NUM_PLAYERS)]
+        game = Tichu(seed=42)
         game.new_game(players)
         with patch(
-            "tichu.player.Player.get_grand_tichu_play",
+            "tichu.random_player.RandomPlayer.get_grand_tichu_play",
             side_effect=["grand_tichu", "pass", "pass", "pass"],
         ):
-            with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
+            with patch(
+                "tichu.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
+            ):
                 game.start_new_round()
 
         assert game.players[0].state.grand_tichu_called
@@ -85,7 +84,9 @@ class TestNextTurnPass:
         game.state.current_combination.combination_type = CombinationType.SINGLE
         game.state.current_combination.value = 5
 
-        with patch("tichu.player.Player.get_card_play", return_value="pass"):
+        with patch(
+            "tichu.random_player.RandomPlayer.get_card_play", return_value="pass"
+        ):
             game.next_turn()
             game.next_turn()
             game.next_turn()
@@ -258,7 +259,7 @@ class TestNextTurnPlayCard:
         player.state.hand = [
             Card(Color.JADE, 9),
             Card(Color.PAGODE, 9),
-            Card(Color.SWORD, 9),
+            Card(Color.SWORDS, 9),
             Card(Color.STAR, 9),
         ]
         with patch.object(player, "get_card_play", return_value={0, 1, 2, 3}):
@@ -380,7 +381,7 @@ class TestNextTurnWish:
         game.current_player.state.hand = [
             Card(Color.PAGODE, 14),
             Card(Color.PAGODE, 2),
-            Card(Color.SWORD, 2),
+            Card(Color.SWORDS, 2),
             Card(Color.STAR, 2),
             Card(Color.JADE, 2),
         ]
@@ -434,30 +435,30 @@ class TestNextTurnEdgeCases:
 
     def test_reproducible_game_with_seed(self):
         """Test that games with same seed produce same hand distributions."""
-        output1 = StringIO()
-        players = [
-            Player(f"Player {i}", player_type=PlayerType.RANDOM)
-            for i in range(NUM_PLAYERS)
-        ]
-        game1 = Tichu(seed=123, output=output1)
+        players = [RandomPlayer(f"Player {i}") for i in range(NUM_PLAYERS)]
+        game1 = Tichu(seed=123)
         game1.new_game(players)
-        with patch("tichu.player.Player.get_grand_tichu_play", return_value="pass"):
-            with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
+        with patch(
+            "tichu.random_player.RandomPlayer.get_grand_tichu_play", return_value="pass"
+        ):
+            with patch(
+                "tichu.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
+            ):
                 game1.start_new_round()
         hands1 = [
             [(card.color, card.value) for card in player.state.hand]
             for player in game1.players
         ]
 
-        output2 = StringIO()
-        players = [
-            Player(f"Player {i}", player_type=PlayerType.RANDOM)
-            for i in range(NUM_PLAYERS)
-        ]
-        game2 = Tichu(seed=123, output=output2)
+        players = [RandomPlayer(f"Player {i}") for i in range(NUM_PLAYERS)]
+        game2 = Tichu(seed=123)
         game2.new_game(players)
-        with patch("tichu.player.Player.get_grand_tichu_play", return_value="pass"):
-            with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
+        with patch(
+            "tichu.random_player.RandomPlayer.get_grand_tichu_play", return_value="pass"
+        ):
+            with patch(
+                "tichu.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
+            ):
                 game2.start_new_round()
         hands2 = [
             [(card.color, card.value) for card in player.state.hand]
@@ -531,7 +532,7 @@ class TestEndRoundScoring:
         # Player 0 called Tichu and finished first
         game.players[0].state.tichu_called = True
         game.state.player_rankings = [0, 1, 2]
-        game.players[3].state.hand = [Card(Color.JADE, 3), Card(Color.SWORD, 4)]
+        game.players[3].state.hand = [Card(Color.JADE, 3), Card(Color.SWORDS, 4)]
         initial_team_score = game.state.scores[0]
 
         game.end_round_scoring()
@@ -545,7 +546,7 @@ class TestEndRoundScoring:
 
         game.players[0].state.grand_tichu_called = True
         game.state.player_rankings = [0, 1, 2]
-        game.players[3].state.hand = [Card(Color.JADE, 3), Card(Color.SWORD, 4)]
+        game.players[3].state.hand = [Card(Color.JADE, 3), Card(Color.SWORDS, 4)]
         initial_team_score = game.state.scores[0]
 
         game.end_round_scoring()
@@ -584,10 +585,10 @@ class TestEndRoundScoring:
 
         # Set up rankings
         game.state.player_rankings = [0, 1, 2]
-        game.players[3].state.hand = [Card(Color.JADE, 3), Card(Color.SWORD, 4)]
+        game.players[3].state.hand = [Card(Color.JADE, 3), Card(Color.SWORDS, 4)]
         game.players[3].state.card_stack = [
             Card(Color.JADE, 5),
-            Card(Color.SWORD, 10),
+            Card(Color.SWORDS, 10),
             Card(Color.SPECIAL, SpecialCard.DRAGON.value),
         ]
         stack_score = Card.count_card_scores(game.players[3].state.card_stack)
@@ -607,7 +608,7 @@ class TestEndRoundScoring:
         # Add some cards to winner's stack
         test_cards = [Card(Color.PAGODE, 5), Card(Color.JADE, 10)]
         game.players[0].state.card_stack.extend(test_cards)
-        game.players[3].state.hand = [Card(Color.JADE, 3), Card(Color.SWORD, 4)]
+        game.players[3].state.hand = [Card(Color.JADE, 3), Card(Color.SWORDS, 4)]
 
         initial_team_score = game.state.scores[0]
         card_score = Card.count_card_scores(test_cards)
@@ -624,7 +625,7 @@ class TestEndRoundScoring:
         # Player 1 (team 1) called Tichu but didn't finish
         game.players[1].state.tichu_called = True
         game.state.player_rankings = [0, 2, 3]
-        game.players[1].state.hand = [Card(Color.JADE, 3), Card(Color.SWORD, 4)]
+        game.players[1].state.hand = [Card(Color.JADE, 3), Card(Color.SWORDS, 4)]
 
         initial_team_0_score = game.state.scores[0]
         initial_team_1_score = game.state.scores[1]
@@ -644,8 +645,12 @@ class TestEndRoundScoring:
         first_round_team_0_score = game.state.scores[0]
 
         # Reset for second round
-        with patch("tichu.player.Player.get_grand_tichu_play", return_value="pass"):
-            with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
+        with patch(
+            "tichu.random_player.RandomPlayer.get_grand_tichu_play", return_value="pass"
+        ):
+            with patch(
+                "tichu.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
+            ):
                 game.start_new_round()
         game.state.player_rankings = [1, 3]
         game.end_round_scoring()
@@ -727,7 +732,7 @@ class TestPushCards:
         card_1 = game.players[0].state.hand[1]
         card_2 = game.players[0].state.hand[2]
 
-        with patch("tichu.player.Player.get_push_play") as mock_get_push:
+        with patch("tichu.random_player.RandomPlayer.get_push_play") as mock_get_push:
             mock_get_push.side_effect = [
                 {0, 1, 2},
                 {10, 11, 12},
@@ -752,7 +757,7 @@ class TestPushCards:
 
         call_sequence = []
 
-        with patch("tichu.player.Player.get_push_play") as mock_get_push:
+        with patch("tichu.random_player.RandomPlayer.get_push_play") as mock_get_push:
             mock_get_push.side_effect = [{0, 1, 2}, {0, 1, 2}, {0, 1, 2}, {0, 1, 2}]
             game.push_cards()
             call_sequence = list(mock_get_push.call_args_list)

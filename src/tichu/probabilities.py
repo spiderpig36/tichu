@@ -47,7 +47,7 @@ if __name__ == "__main__":
         Card(Color.JADE, 2),
         Card(Color.PAGODE, 2),
         Card(Color.STAR, 2),
-        Card(Color.SWORD, 2),
+        Card(Color.SWORDS, 2),
     ]
     player_num = 0
     deck = []
