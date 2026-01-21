@@ -1,6 +1,9 @@
 from dataclasses import dataclass, field
+from typing_extensions import Literal
 from tichu.card import Card
 from tichu.combination import Combination
+
+type Play = Literal["pass", "tichu"] | set[int]
 
 
 @dataclass
@@ -13,6 +16,7 @@ class TichuState:
     current_wish: int | None = None
     card_stack: list[Card] = field(default_factory=list)
     player_rankings: list[int] = field(default_factory=list)
+    play_log: list[tuple[int, Play]] = field(default_factory=list)
 
     def __str__(self):
         return f"""Current Game State:
@@ -21,5 +25,4 @@ class TichuState:
 - Winning Player Index: {self.winning_player_idx}
 - Current wish: {self.current_wish}
 - Card stack: {self.card_stack}
-- Player rankings: {self.player_rankings}
-"""
+- Player rankings: {self.player_rankings}"""

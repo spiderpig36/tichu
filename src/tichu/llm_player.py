@@ -12,6 +12,10 @@ from tichu.card import NORMAL_CARD_VALUES
 from tichu.player import Play, Player
 
 
+class InvalidLLMResponse(Exception):
+    """Raised when the LLM returns an invalid response."""
+
+
 class LLMPlay(BaseModel):
     play: Literal["pass", "tichu"] | list[int]
 
@@ -49,30 +53,22 @@ Instructions: Decide what to play based on the rules and state. Respond with exa
 Ensure the play is valid according to the rules.
 """
 
-        try:
-            response = self.client.responses.parse(
-                text_format=LLMPlay,
-                model="gpt-4o-2024-08-06",
-                input=[{"role": "user", "content": prompt}],
-            )
-        except Exception as e:
-            logging.error(f"Error calling LLM: {e}. Defaulting to pass.")
-            return "pass"
+        response = self.client.responses.parse(
+            text_format=LLMPlay,
+            model="gpt-4o-2024-08-06",
+            input=[{"role": "user", "content": prompt}],
+        )
 
         if not response or not response.output_parsed:
-            logging.error("No valid response from LLM. Defaulting to pass.")
-            return "pass"
+            raise InvalidLLMResponse("No response from LLM")
         answer = response.output_parsed.play
         if answer == "pass":
             return "pass"
         elif answer == "tichu":
             return "tichu"
-        else:
-            if answer and all(0 <= idx < len(self.state.hand) for idx in answer):
-                return set(answer)
-            else:
-                logging.error(f"Invalid LLM response: {answer}. Defaulting to pass.")
-                return "pass"
+        if answer and all(0 <= idx < len(self.state.hand) for idx in answer):
+            return set(answer)
+        raise InvalidLLMResponse(f"Invalid card indices: {answer}")
 
     def get_grand_tichu_play(self):
         # TODO: Implement LLM grand tichu play

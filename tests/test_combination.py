@@ -527,11 +527,8 @@ def test_can_be_played_on_non_bomb_vs_bomb(
         "expected",
     ),
     [
-        # SINGLE: higher single available -> True
         (CombinationType.SINGLE, 5, 1, 7, [Card(Color.JADE, 7)], True),
-        # SINGLE: single lower than current -> False
         (CombinationType.SINGLE, 9, 1, 8, [Card(Color.SWORDS, 8)], False),
-        # PAIR: direct pair available -> True
         (
             CombinationType.PAIR,
             10,
@@ -540,7 +537,6 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             [Card(Color.JADE, 12), Card(Color.PAGODE, 12)],
             True,
         ),
-        # PAIR: single + phoenix -> True
         (
             CombinationType.PAIR,
             10,
@@ -549,7 +545,6 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             [Card(Color.JADE, 11), Card(Color.SPECIAL, SpecialCard.PHOENIX.value)],
             True,
         ),
-        # PAIR: cannot beat current pair value -> False
         (
             CombinationType.PAIR,
             12,
@@ -558,7 +553,6 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             [Card(Color.JADE, 11), Card(Color.PAGODE, 11)],
             False,
         ),
-        # TRIPLE: direct triple available -> True
         (
             CombinationType.TRIPLE,
             6,
@@ -567,7 +561,6 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             [Card(Color.JADE, 8), Card(Color.PAGODE, 8), Card(Color.SWORDS, 8)],
             True,
         ),
-        # TRIPLE: two + phoenix -> True
         (
             CombinationType.TRIPLE,
             10,
@@ -580,7 +573,6 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             ],
             True,
         ),
-        # BOMB: four-of-a-kind available -> True
         (
             CombinationType.BOMB,
             5,
@@ -594,7 +586,6 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             ],
             True,
         ),
-        # BOMB: needs to be played
         (
             CombinationType.SINGLE,
             5,
@@ -608,7 +599,6 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             ],
             True,
         ),
-        # BOMB: can not be played if too small
         (
             CombinationType.BOMB,
             10,
@@ -622,7 +612,6 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             ],
             False,
         ),
-        # BOMB: insufficient cards -> False
         (
             CombinationType.BOMB,
             5,
@@ -631,7 +620,6 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             [Card(Color.JADE, 9), Card(Color.PAGODE, 9), Card(Color.SWORDS, 9)],
             False,
         ),
-        # FULL_HOUSE: 3 + 2 available -> Too Small -> False
         (
             CombinationType.FULL_HOUSE,
             10,
@@ -660,7 +648,6 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             ],
             True,
         ),
-        # FULL_HOUSE: with phoenix complement -> True
         (
             CombinationType.FULL_HOUSE,
             10,
@@ -675,7 +662,6 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             ],
             True,
         ),
-        # FULL_HOUSE: missing complement -> False
         (
             CombinationType.FULL_HOUSE,
             10,

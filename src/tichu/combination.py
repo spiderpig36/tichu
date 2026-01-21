@@ -218,7 +218,7 @@ class Combination:
 
         if next_combination is None and wish_card_count == BOMB_SIZE:
             next_combination = Combination(CombinationType.BOMB, wish_value)
-        if next_combination is None:
+        if next_combination is None and wish_value > combination.value:
             match combination.combination_type:
                 case CombinationType.SINGLE:
                     next_combination = Combination(CombinationType.SINGLE, wish_value)
@@ -234,6 +234,8 @@ class Combination:
                         next_combination = Combination(
                             CombinationType.TRIPLE, wish_value
                         )
+        if next_combination is None:
+            match combination.combination_type:
                 case CombinationType.FULL_HOUSE:
                     if (
                         FULL_HOUSE_LENGTH_2 - int(has_phoenix)
@@ -245,22 +247,26 @@ class Combination:
                             - wish_card_count,
                         )
                     ) in card_count.values():
-                        next_combination = Combination(
-                            CombinationType.FULL_HOUSE,
-                            next(
-                                (
-                                    key
-                                    for key, val in card_count.items()
-                                    if val == FULL_HOUSE_LENGTH_KEY
-                                ),
-                                sorted(card_count.keys())[-1],
+                        next_value = next(
+                            (
+                                key
+                                for key, val in card_count.items()
+                                if val == FULL_HOUSE_LENGTH_KEY
                             ),
+                            sorted(card_count.keys())[-1],
                         )
+                        if next_value > combination.value:
+                            next_combination = Combination(
+                                CombinationType.FULL_HOUSE,
+                                next_value,
+                            )
                 case CombinationType.STRAIGHT:
                     length = combination.length
                     for i in range(length - 1, -1, -1):
-                        window_start = max(0, wish_value - (length - 1) + i)
-                        window_end = min(wish_value + i, 14)
+                        window_start = min(
+                            max(0, wish_value - (length - 1) + i), 14 - (length - 1)
+                        )
+                        window_end = window_start + length - 1
                         window = [
                             val
                             for val in straight_values
@@ -313,6 +319,7 @@ class Combination:
     def possible_plays(
         combination: "Combination | None",
         cards: list[Card],
+        wish_value: int | None = None,
     ) -> list[set[Card]]:
         min_value = round(combination.value + 1) if combination else 0
         card_buckets: dict[int, set[Card]] = defaultdict(set)
@@ -598,4 +605,12 @@ class Combination:
                 else:
                     stair_plays = []
 
+        if wish_value is not None and Combination.can_fulfill_wish(
+            combination, wish_value, cards
+        ):
+            possible_combinations = [
+                combo
+                for combo in possible_combinations
+                if wish_value in [card.value for card in combo]
+            ]
         return possible_combinations

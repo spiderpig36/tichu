@@ -5,9 +5,7 @@ from tichu import HAND_SIZE, NUM_PLAYERS
 from tichu.card import Color, NORMAL_CARD_VALUES
 from tichu.combination import Combination
 from tichu.player_state import PlayerState
-from tichu.tichu_state import TichuState
-
-type Play = Literal["pass", "tichu"] | set[int]
+from tichu.tichu_state import Play, TichuState
 
 
 class Player(abc.ABC):

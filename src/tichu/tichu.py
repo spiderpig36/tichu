@@ -16,8 +16,8 @@ from tichu.combination import Combination, CombinationType
 from tichu.human_player import HumanPlayer
 from tichu.llm_player import LLMPlayer
 from tichu.random_player import RandomPlayer
-from tichu.player import Play, Player
-from tichu.tichu_state import TichuState
+from tichu.player import Player
+from tichu.tichu_state import Play, TichuState
 
 
 class TichuError(Exception):
@@ -36,7 +36,6 @@ class Tichu:
     ):
         self.goal_score = goal_score
         self.random = random.Random(seed)
-        self.play_log: list[tuple[int, Play]] = []
 
     def new_game(self, players: list[Player]):
         self.state = TichuState()
@@ -47,7 +46,7 @@ class Tichu:
             player.set_game(self.state)
 
     def start_new_round(self):
-        self.play_log.clear()
+        self.state.play_log.clear()
         self.state.current_round += 1
         for player in self.players:
             player.reset_for_new_round()
@@ -119,7 +118,7 @@ class Tichu:
             player.state.hand.sort(key=lambda c: c.value)
 
     def add_play_log_entry(self, play: Play):
-        self.play_log.append((self.state.current_player_idx, play))
+        self.state.play_log.append((self.state.current_player_idx, play))
 
     def next_turn(self):
         if self.state.current_player_idx in self.state.player_rankings:
@@ -145,8 +144,9 @@ class Tichu:
                 self.current_player.state.has_passed = True
                 if all(
                     player.state.has_passed
-                    for player in self.players
+                    for idx, player in enumerate(self.players)
                     if player != self.winning_player
+                    and idx not in self.state.player_rankings
                 ):
                     logging.info(
                         "All other players have passed. Resetting current combination."
@@ -332,15 +332,16 @@ class Tichu:
 
 if __name__ == "__main__":
     players: list[Player] = [
-        RandomPlayer(f"Player RANDOM {i}") for i in range(NUM_PLAYERS - 1)
+        RandomPlayer(f"Player RANDOM {i}") for i in range(NUM_PLAYERS)
     ]
-    players.append(LLMPlayer("Player LLM"))
+    # players.append(LLMPlayer("Player LLM"))
     game = Tichu()
     game.new_game(players)
     game.start_new_round()
     while not game.end_of_round:
         print(game.state)
         print(game.current_player)
+        print()
         try:
             game.next_turn()
         except InvalidPlayError as e:
