@@ -1,11 +1,9 @@
 import abc
 from typing import Literal
 
-from tichu import HAND_SIZE, NUM_PLAYERS
-from tichu.card import Color, NORMAL_CARD_VALUES
-from tichu.combination import Combination
+from tichu.card import Color
 from tichu.player_state import PlayerState
-from tichu.tichu_state import Play, TichuState
+from tichu.tichu_state import CardPlay, TichuState
 
 
 class Player(abc.ABC):
@@ -20,19 +18,11 @@ class Player(abc.ABC):
         return input(prompt).lower()
 
     @abc.abstractmethod
-    def get_card_play(self) -> Play:
+    def get_card_play(self) -> CardPlay:
         pass
 
     @abc.abstractmethod
     def get_grand_tichu_play(self) -> Literal["pass", "grand_tichu"]:
-        pass
-
-    @abc.abstractmethod
-    def get_dragon_stack_recipient_play(self) -> int:
-        pass
-
-    @abc.abstractmethod
-    def get_mahjong_wish_play(self) -> int:
         pass
 
     @abc.abstractmethod

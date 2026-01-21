@@ -21,11 +21,5 @@ class RandomPlayer(Player):
     def get_grand_tichu_play(self):
         return random.choice(["pass", "grand_tichu"])
 
-    def get_dragon_stack_recipient_play(self) -> int:
-        return random.randint(0, NUM_PLAYERS - 1)
-
-    def get_mahjong_wish_play(self) -> int:
-        return random.choice(NORMAL_CARD_VALUES)
-
     def get_push_play(self) -> set[int]:
         return set(random.sample(range(HAND_SIZE), NUM_PLAYERS - 1))

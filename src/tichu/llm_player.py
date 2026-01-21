@@ -1,4 +1,3 @@
-import logging
 import os
 import random
 from typing import Literal
@@ -9,7 +8,7 @@ from pydantic import BaseModel
 
 from tichu import HAND_SIZE, NUM_PLAYERS
 from tichu.card import NORMAL_CARD_VALUES
-from tichu.player import Play, Player
+from tichu.player import Player
 
 
 class InvalidLLMResponse(Exception):
@@ -67,20 +66,12 @@ Ensure the play is valid according to the rules.
         elif answer == "tichu":
             return "tichu"
         if answer and all(0 <= idx < len(self.state.hand) for idx in answer):
-            return set(answer)
+            return {self.state.hand[idx] for idx in answer}
         raise InvalidLLMResponse(f"Invalid card indices: {answer}")
 
     def get_grand_tichu_play(self):
         # TODO: Implement LLM grand tichu play
         return "pass"
-
-    def get_dragon_stack_recipient_play(self) -> int:
-        # TODO: Implement LLM dragon stack recipient play
-        return random.randint(0, NUM_PLAYERS - 1)
-
-    def get_mahjong_wish_play(self) -> int:
-        # TODO: Implement LLM mahjong wish play
-        return random.choice(NORMAL_CARD_VALUES)
 
     def get_push_play(self) -> set[int]:
         # TODO: Implement LLM push play

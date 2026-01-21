@@ -331,7 +331,7 @@ class TestNextTurnSpecialCards:
         game.players[1].state.has_passed = True
 
         # Replace first card with Dragon
-        game.state.card_stack = [Card(Color.SPECIAL, SpecialCard.DRAGON.value)]
+        game.state.card_stack = [SpecialCard.DRAGON.value]
         game.state.current_combination = MagicMock()
         game.state.current_combination.combination_type = CombinationType.SINGLE
         game.state.current_combination.value = SpecialCard.DRAGON.value
@@ -347,9 +347,7 @@ class TestNextTurnSpecialCards:
         # Winning player should not be updated
         assert game.state.winning_player_idx == 3
         assert game.state.current_player_idx == 3
-        assert game.players[2].state.card_stack == [
-            Card(Color.SPECIAL, SpecialCard.DRAGON.value)
-        ]
+        assert game.players[2].state.card_stack == [SpecialCard.DRAGON.value]
 
 
 class TestNextTurnWish:
@@ -589,7 +587,7 @@ class TestEndRoundScoring:
         game.players[3].state.card_stack = [
             Card(Color.JADE, 5),
             Card(Color.SWORDS, 10),
-            Card(Color.SPECIAL, SpecialCard.DRAGON.value),
+            SpecialCard.DRAGON.value,
         ]
         stack_score = Card.count_card_scores(game.players[3].state.card_stack)
         initial_team_score = game.state.scores[0]
@@ -679,7 +677,7 @@ class TestEndRoundScoring:
         game.state.player_rankings = [0, 1, 2]
 
         # Add dragon to winner's card stack (dragon is worth 25 points)
-        dragon = Card(Color.SPECIAL, SpecialCard.DRAGON.value)
+        dragon = SpecialCard.DRAGON.value
         game.players[0].state.card_stack.append(dragon)
 
         initial_team_score = game.state.scores[0]

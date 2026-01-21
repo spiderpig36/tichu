@@ -70,7 +70,7 @@ class Combination:
     @classmethod
     def from_cards(cls, cards: list[Card]) -> "Combination | None":
         if len(cards) <= TRIPLE_SIZE and all(
-            card.value == cards[0].value or card.value == SpecialCard.PHOENIX.value
+            card.value == cards[0].value or card == SpecialCard.PHOENIX.value
             for card in cards
         ):
             match len(cards):
@@ -84,7 +84,7 @@ class Combination:
             card.value == cards[0].value for card in cards
         ):
             return cls(CombinationType.BOMB, cards[0].value)
-        has_phoenix = SpecialCard.PHOENIX.value in ([card.value for card in cards])
+        has_phoenix = SpecialCard.PHOENIX.value in cards
         cards.sort(key=lambda c: c.value)
         card_count = Combination.get_card_count(cards)
         straight_values = sorted(card_count.keys())
@@ -168,7 +168,7 @@ class Combination:
     def get_card_count(cards: list[Card]) -> dict[int, int]:
         card_count: dict[int, int] = {}
         for card in cards:
-            if card.color != Color.SPECIAL or card.value == SpecialCard.MAH_JONG.value:
+            if card.color != Color.SPECIAL or card == SpecialCard.MAH_JONG.value:
                 card_count[card.value] = card_count.get(card.value, 0) + 1
         return card_count
 
@@ -179,7 +179,7 @@ class Combination:
         card_count = Combination.get_card_count(cards)
         straight_values = sorted(card_count.keys())
         wish_card_count = card_count.get(wish_value, 0)
-        has_phoenix = SpecialCard.PHOENIX.value in [card.value for card in cards]
+        has_phoenix = SpecialCard.PHOENIX.value in cards
         next_combination = None
         if wish_card_count == 0:
             return False
@@ -324,13 +324,12 @@ class Combination:
         min_value = round(combination.value + 1) if combination else 0
         card_buckets: dict[int, set[Card]] = defaultdict(set)
         for card in cards:
-            if card.color != Color.SPECIAL or card.value == SpecialCard.MAH_JONG.value:
+            if card.color != Color.SPECIAL or card == SpecialCard.MAH_JONG.value:
                 card_buckets[card.value].add(card)
         straight_values = sorted(card_buckets.keys())
-        has_phoenix = SpecialCard.PHOENIX.value in [card.value for card in cards]
-        phoenix_card = Card(Color.SPECIAL, SpecialCard.PHOENIX.value)
-        has_dragon = SpecialCard.DRAGON.value in [card.value for card in cards]
-        has_dog = SpecialCard.DOG.value in [card.value for card in cards]
+        has_phoenix = SpecialCard.PHOENIX.value in cards
+        has_dragon = SpecialCard.DRAGON.value in cards
+        has_dog = SpecialCard.DOG.value in cards
         possible_combinations: list[set[Card]] = []
 
         if (
@@ -342,18 +341,12 @@ class Combination:
                     possible_combinations.extend(
                         [{card} for card in card_buckets[value]]
                     )
-            if has_phoenix and min_value < SpecialCard.DRAGON.value:
-                possible_combinations.append(
-                    {Card(Color.SPECIAL, SpecialCard.PHOENIX.value)}
-                )
+            if has_phoenix and min_value < SpecialCard.DRAGON.value.value:
+                possible_combinations.append({SpecialCard.PHOENIX.value})
             if has_dragon:
-                possible_combinations.append(
-                    {Card(Color.SPECIAL, SpecialCard.DRAGON.value)}
-                )
+                possible_combinations.append({SpecialCard.DRAGON.value})
             if has_dog and min_value == 0:
-                possible_combinations.append(
-                    {Card(Color.SPECIAL, SpecialCard.DOG.value)}
-                )
+                possible_combinations.append({SpecialCard.DOG.value})
 
         if combination is None or combination.combination_type == CombinationType.PAIR:
             for value in card_buckets.keys():
@@ -368,7 +361,7 @@ class Combination:
                     elif len(card_buckets[value]) == 1 and has_phoenix:
                         possible_combinations.extend(
                             [
-                                set(combo) | {phoenix_card}
+                                set(combo) | {SpecialCard.PHOENIX.value}
                                 for combo in combinations(card_buckets[value], 1)
                             ]
                         )
@@ -388,7 +381,7 @@ class Combination:
                     elif len(card_buckets[value]) == 2 and has_phoenix:
                         possible_combinations.extend(
                             [
-                                set(combo) | {phoenix_card}
+                                set(combo) | {SpecialCard.PHOENIX.value}
                                 for combo in combinations(card_buckets[value], 2)
                             ]
                         )
@@ -442,7 +435,7 @@ class Combination:
                             if len(card_buckets[val]) == 0:
                                 new_plays.extend(
                                     [
-                                        play | {phoenix_card}
+                                        play | {SpecialCard.PHOENIX.value}
                                         for play in (
                                             straight_plays
                                             if len(straight_plays) > 0
@@ -453,13 +446,13 @@ class Combination:
                             if has_phoenix and len(window) == length:
                                 new_plays.extend(
                                     [
-                                        play | {phoenix_card}
+                                        play | {SpecialCard.PHOENIX.value}
                                         for play in (
                                             straight_plays
                                             if len(straight_plays) > 0
                                             else [set()]
                                         )
-                                        if phoenix_card not in play
+                                        if SpecialCard.PHOENIX.value not in play
                                     ]
                                 )
                             straight_plays = new_plays
@@ -553,7 +546,7 @@ class Combination:
                         if triple_val != single_val:
                             possible_combinations.extend(
                                 [
-                                    triple | single | {phoenix_card}
+                                    triple | single | {SpecialCard.PHOENIX.value}
                                     for triple in triple_combo
                                     for single in single_combo
                                 ]
@@ -566,7 +559,7 @@ class Combination:
                         ):
                             possible_combinations.extend(
                                 [
-                                    pair | pair_2 | {phoenix_card}
+                                    pair | pair_2 | {SpecialCard.PHOENIX.value}
                                     for pair in pair_combo
                                     for pair_2 in pair_combo_2
                                 ]
@@ -585,9 +578,9 @@ class Combination:
                     phoenix_plays = []
                     if has_phoenix:
                         phoenix_plays = [
-                            play | {card} | {phoenix_card}
+                            play | {card} | {SpecialCard.PHOENIX.value}
                             for play in stair_plays + [set()]
-                            if phoenix_card not in play
+                            if SpecialCard.PHOENIX.value not in play
                             for card in card_buckets[i]
                         ]
                     stair_plays = new_plays + phoenix_plays
