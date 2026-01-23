@@ -9,10 +9,10 @@ from tichu.tichu_state import CardPlay, TichuState
 class Player(abc.ABC):
     def __init__(self, name: str = "Anonymous"):
         self.name = name
-        self.state = PlayerState()
 
-    def set_game(self, game_state: TichuState):
+    def set_game(self, game_state: TichuState, player_idx: int):
         self.game_state = game_state
+        self.state = PlayerState(player_idx)
 
     def _get_input(self, prompt: str) -> str:
         return input(prompt).lower()
@@ -48,6 +48,12 @@ class Player(abc.ABC):
             return card
         msg = f"Card {card} not in hand"
         raise ValueError(msg)
+
+    def get_opponents(self):
+        if self.state.player_idx % 2 == 0:
+            return [1, 3]
+        else:
+            return [0, 2]
 
     def has_mahjong(self):
         """Check if the player has the Mah Jong card."""

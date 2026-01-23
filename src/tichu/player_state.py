@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
+
 from tichu.card import Card
 
 
@@ -12,6 +13,7 @@ class PlayerType(Enum):
 
 @dataclass
 class PlayerState:
+    player_idx: int
     hand: list[Card] = field(default_factory=list)
     card_stack: list[Card] = field(default_factory=list)
     player_type: PlayerType = PlayerType.HUMAN

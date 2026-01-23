@@ -14,8 +14,8 @@ from tichu.card import NORMAL_CARD_VALUES, Card, Color, SpecialCard
 from tichu.combination import Combination, CombinationType
 from tichu.human_player import HumanPlayer
 from tichu.llm_player import LLMPlayer
-from tichu.random_player import RandomPlayer
 from tichu.player import Player
+from tichu.random_player import RandomPlayer
 from tichu.tichu_state import CardPlay, TichuState
 
 
@@ -41,8 +41,8 @@ class Tichu:
         if len(players) != NUM_PLAYERS:
             raise ValueError("Number of players must match NUM_PLAYERS")
         self.players = players
-        for player in self.players:
-            player.set_game(self.state)
+        for idx, player in enumerate(self.players):
+            player.set_game(self.state, idx)
 
     def start_new_round(self):
         self.state.play_log.clear()
@@ -156,7 +156,7 @@ class Tichu:
                         and self.state.current_combination.combination_type
                         == CombinationType.SINGLE
                         and self.state.current_combination.value
-                        == SpecialCard.DRAGON.value
+                        == SpecialCard.DRAGON.value.value
                     ):
                         logging.info(
                             f"{self.winning_player.name} wins the single card round and collects the card stack."
@@ -187,6 +187,11 @@ class Tichu:
                 return
             else:
                 cards, play_argument = card_play
+                if not all([card in current_hand for card in cards]):
+                    msg = (
+                        "Play contains cards that are not in the current players hand."
+                    )
+                    raise InvalidPlayError(msg)
 
                 next_combination = Combination.from_cards(list(cards))
                 if next_combination is None:
@@ -238,7 +243,7 @@ class Tichu:
                     == CombinationType.SINGLE
                 ):
                     match self.state.current_combination.value:
-                        case SpecialCard.DOG.value:
+                        case SpecialCard.DOG.value.value:
                             logging.info(
                                 f"{self.current_player.name} played the Dog and passes the turn to their teammate."
                             )
@@ -246,13 +251,13 @@ class Tichu:
                                 self.state.current_player_idx + 2
                             ) % NUM_PLAYERS
                             return
-                        case SpecialCard.PHOENIX.value:
+                        case SpecialCard.PHOENIX.value.value:
                             self.state.current_combination.value = (
                                 self.state.card_stack[-2].value + 0.5
                                 if len(self.state.card_stack) > 1
                                 else NORMAL_CARD_VALUES[0]
                             )
-                        case SpecialCard.DRAGON.value:
+                        case SpecialCard.DRAGON.value.value:
                             if play_argument is None:
                                 msg = "Dragon stack recipient id must be provided when playing the Dragon."
                                 raise InvalidPlayError(msg)
@@ -269,7 +274,7 @@ class Tichu:
                             ):
                                 msg = "Dragon stack recipient cannot be on the same team as the player who played the Dragon."
                                 raise InvalidPlayError(msg)
-                        case SpecialCard.MAH_JONG.value:
+                        case SpecialCard.MAH_JONG.value.value:
                             if (
                                 play_argument is None
                                 or play_argument not in NORMAL_CARD_VALUES
@@ -338,8 +343,9 @@ if __name__ == "__main__":
         print(game.state)
         print(game.current_player)
         print()
+        play = game.current_player.get_card_play()
         try:
-            game.next_turn()
+            game.next_turn(play)
         except InvalidPlayError as e:
             logging.info(f"Invalid play: {e}")
             continue
