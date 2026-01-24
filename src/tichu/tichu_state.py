@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from tichu import card
 from typing_extensions import Literal
 from tichu.card import Card
 from tichu.combination import Combination
@@ -20,10 +21,11 @@ class TichuState:
     play_log: list[tuple[int, CardPlay]] = field(default_factory=list)
 
     def __str__(self):
+        card_stack = ", ".join(str(card) for card in self.card_stack)
         return f"""Current Game State:
 - Scores: {self.scores}
 - Current combination: {self.current_combination}
 - Winning Player Index: {self.winning_player_idx}
 - Current wish: {self.current_wish}
-- Card stack: {self.card_stack}
+- Card stack: {card_stack}
 - Player rankings: {self.player_rankings}"""

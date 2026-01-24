@@ -16,6 +16,12 @@ from tichu.combination import Combination, CombinationType
             1,
         ),
         (
+            [SpecialCard.PHOENIX.value, Card(Color.SWORDS, 13)],
+            CombinationType.PAIR,
+            13,
+            1,
+        ),
+        (
             [Card(Color.JADE, 7), Card(Color.SWORDS, 7), Card(Color.STAR, 7)],
             CombinationType.TRIPLE,
             7,

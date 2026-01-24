@@ -327,9 +327,10 @@ class Tichu:
 
 if __name__ == "__main__":
     players: list[Player] = [
-        RandomPlayer(f"Player RANDOM {i}") for i in range(NUM_PLAYERS)
+        RandomPlayer(f"RANDOM {i}") for i in range(NUM_PLAYERS - 1)
     ]
-    # players.append(LLMPlayer("Player LLM"))
+    players.append(HumanPlayer("HUMAN"))
+    # players.append(LLMPlayer("LLM"))
     game = Tichu()
     game.new_game(players)
     game.start_new_round()

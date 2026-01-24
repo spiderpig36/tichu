@@ -1,11 +1,39 @@
 import logging
 
 from tichu import HAND_SIZE, NUM_PLAYERS
-from tichu.card import NORMAL_CARD_VALUES
+from tichu.card import NORMAL_CARD_VALUES, SpecialCard
 from tichu.player import Player
 
 
 class HumanPlayer(Player):
+    def get_dragon_stack_recipient(self) -> int:
+        recipient = self._get_input(
+            "Enter the index of the player who will receive the dragon stack: "
+        )
+        try:
+            return int(recipient)
+        except ValueError:
+            logging.error(
+                "Invalid input. Please enter a valid player index. Try again."
+            )
+            return self.get_dragon_stack_recipient()
+
+    def get_mahjong_wish(self) -> int:
+        wish = self._get_input("Enter the value of the card you wish for (2-14): ")
+        try:
+            value = int(wish)
+            if value in NORMAL_CARD_VALUES:
+                return value
+            logging.error(
+                "Invalid input. Please enter a value between 2 and 14. Try again."
+            )
+            return self.get_mahjong_wish()
+        except ValueError:
+            logging.error(
+                "Invalid input. Please enter a numeric card value. Try again."
+            )
+            return self.get_mahjong_wish()
+
     def get_card_play(self):
         play = self._get_input(
             "Enter the index of the card to play separated by a comma, 'pass' or 'tichu': "
@@ -16,7 +44,13 @@ class HumanPlayer(Player):
             return "tichu"
         try:
             card_indices = [int(idx.strip()) for idx in play.split(",")]
-            return set(card_indices)
+            cards = set(self.state.hand[i] for i in card_indices)
+            argument = None
+            if SpecialCard.DRAGON.value in cards:
+                argument = self.get_dragon_stack_recipient()
+            elif SpecialCard.MAH_JONG.value in cards:
+                argument = self.get_mahjong_wish()
+            return (cards, argument)
         except ValueError:
             logging.error(
                 "Invalid input. Please enter valid card indices separated by commas. Try again."
@@ -31,34 +65,6 @@ class HumanPlayer(Player):
             return "grand_tichu"
         logging.error("Invalid input. Please enter 'pass' or 'grand_tichu'. Try again.")
         return self.get_grand_tichu_play()
-
-    def get_dragon_stack_recipient_play(self) -> int:
-        recipient = self._get_input(
-            "Enter the index of the player who will receive the dragon stack: "
-        )
-        try:
-            return int(recipient)
-        except ValueError:
-            logging.error(
-                "Invalid input. Please enter a valid player index. Try again."
-            )
-            return self.get_dragon_stack_recipient_play()
-
-    def get_mahjong_wish_play(self) -> int:
-        wish = self._get_input("Enter the value of the card you wish for (2-14): ")
-        try:
-            value = int(wish)
-            if value in NORMAL_CARD_VALUES:
-                return value
-            logging.error(
-                "Invalid input. Please enter a value between 2 and 14. Try again."
-            )
-            return self.get_mahjong_wish_play()
-        except ValueError:
-            logging.error(
-                "Invalid input. Please enter a numeric card value. Try again."
-            )
-            return self.get_mahjong_wish_play()
 
     def get_push_play(self) -> set[int]:
         push = self._get_input(

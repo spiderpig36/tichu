@@ -70,4 +70,4 @@ class Player(abc.ABC):
         hand = "\n  ".join(
             [""] + [f"{i}: {card}" for i, card in enumerate(self.state.hand)]
         )
-        return f"Player {self.name} with hand: {hand}"
+        return f"Player {self.name} with index {self.state.player_idx} and hand: {hand}"

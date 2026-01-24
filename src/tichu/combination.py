@@ -69,6 +69,7 @@ class Combination:
 
     @classmethod
     def from_cards(cls, cards: list[Card]) -> "Combination | None":
+        cards.sort(key=lambda c: c.value)
         if len(cards) <= TRIPLE_SIZE and all(
             card.value == cards[0].value or card == SpecialCard.PHOENIX.value
             for card in cards
@@ -85,7 +86,6 @@ class Combination:
         ):
             return cls(CombinationType.BOMB, cards[0].value)
         has_phoenix = SpecialCard.PHOENIX.value in cards
-        cards.sort(key=lambda c: c.value)
         card_count = Combination.get_card_count(cards)
         straight_values = sorted(card_count.keys())
         if (
