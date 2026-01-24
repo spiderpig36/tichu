@@ -120,175 +120,169 @@ class Tichu:
         self.state.play_log.append((self.state.current_player_idx, play))
 
     def next_turn(self, card_play: CardPlay):
-        if self.state.current_player_idx in self.state.player_rankings:
-            logging.info(
-                f"{self.current_player.name} has no cards left and is skipped!"
-            )
-        else:
-            current_hand = self.current_player.state.hand
-            if card_play == "pass":
-                if (
-                    self.state.current_wish is not None
-                    and Combination.can_fulfill_wish(
-                        self.state.current_combination,
-                        self.state.current_wish,
-                        current_hand,
-                    )
-                ):
-                    msg = f"You can fulfill the wish for card value {self.state.current_wish} and cannot pass."
-                    raise InvalidPlayError(msg)
-                logging.info(f"{self.current_player.name} has passed.")
-                self.add_play_log_entry(card_play)
-                self.current_player.state.has_passed = True
-                if all(
-                    player.state.has_passed
-                    for idx, player in enumerate(self.players)
-                    if player != self.winning_player
-                    and idx not in self.state.player_rankings
-                ):
-                    logging.info(
-                        "All other players have passed. Resetting current combination."
-                    )
-                    for player in self.players:
-                        player.state.has_passed = False
-                    if (
-                        self.state.current_combination
-                        and self.state.current_combination.combination_type
-                        == CombinationType.SINGLE
-                        and self.state.current_combination.value
-                        == SpecialCard.DRAGON.value.value
-                    ):
-                        logging.info(
-                            f"{self.winning_player.name} wins the single card round and collects the card stack."
-                        )
-                        if self.state.dragon_stack_recipient_id is None:
-                            msg = "Dragon stack recipient id is not set."
-                            raise ValueError(msg)
-
-                        self.players[
-                            self.state.dragon_stack_recipient_id
-                        ].state.card_stack.extend(self.state.card_stack)
-                    else:
-                        self.winning_player.state.card_stack.extend(
-                            self.state.card_stack
-                        )
-                    self.state.current_combination = None
-                    self.state.card_stack.clear()
-            elif card_play == "tichu":
-                if self.current_player.state.grand_tichu_called:
-                    msg = "Grand Tichu was already called."
-                    raise InvalidPlayError(msg)
-                if len(self.current_player.state.hand) != HAND_SIZE:
-                    msg = "Tichu can only be called at the start of a turn with a full hand."
-                    raise InvalidPlayError(msg)
-                logging.info(f"{self.current_player.name} has called Tichu!")
-                self.current_player.state.tichu_called = True
-                self.add_play_log_entry(card_play)
-                return
-            else:
-                cards, play_argument = card_play
-                if not all([card in current_hand for card in cards]):
-                    msg = (
-                        "Play contains cards that are not in the current players hand."
-                    )
-                    raise InvalidPlayError(msg)
-
-                next_combination = Combination.from_cards(list(cards))
-                if next_combination is None:
-                    msg = "Cards are not a valid combination."
-                    raise InvalidPlayError(msg)
-                if (
-                    self.state.current_combination is not None
-                    and not next_combination.can_be_played_on(
-                        self.state.current_combination
-                    )
-                ):
-                    msg = "Played combination must be of the same kind as the current combination and higher than the current combination."
-                    raise InvalidPlayError(msg)
-                if self.state.current_wish is not None:
-                    if self.state.current_wish in [card.value for card in cards]:
-                        logging.info(
-                            f"{self.current_player.name} has fulfilled the wish for card value {self.state.current_wish}."
-                        )
-                        self.state.current_wish = None
-                    elif self.state.current_wish in [
-                        card.value for card in self.current_player.state.hand
-                    ]:
-                        if Combination.can_fulfill_wish(
-                            self.state.current_combination,
-                            self.state.current_wish,
-                            self.current_player.state.hand,
-                        ):
-                            msg = f"The played combination does not fulfill the wish for card value {self.state.current_wish}."
-                            raise InvalidPlayError(msg)
-
+        current_hand = self.current_player.state.hand
+        if card_play == "pass":
+            if self.state.current_wish is not None and Combination.can_fulfill_wish(
+                self.state.current_combination,
+                self.state.current_wish,
+                current_hand,
+            ):
+                msg = f"You can fulfill the wish for card value {self.state.current_wish} and cannot pass."
+                raise InvalidPlayError(msg)
+            logging.info(f"{self.current_player.name} has passed.")
+            self.add_play_log_entry(card_play)
+            self.current_player.state.has_passed = True
+            if all(
+                player.state.has_passed
+                for idx, player in enumerate(self.players)
+                if player != self.winning_player
+                and idx not in self.state.player_rankings
+            ):
+                logging.info(
+                    "All other players have passed. Resetting current combination."
+                )
                 for player in self.players:
                     player.state.has_passed = False
-                self.state.current_combination = next_combination
-                self.state.winning_player_idx = self.state.current_player_idx
-                for card in cards:
-                    self.current_player.play_card(card)
-                if len(self.current_player.state.hand) == 0:
-                    logging.info(
-                        f"{self.current_player.name} has played all their cards and finished the round!"
-                    )
-                    self.state.player_rankings.append(self.state.current_player_idx)
-                self.state.card_stack.extend(list(cards))
-
-                self.add_play_log_entry(card_play)
-                logging.info(", ".join([str(card) for card in cards]))
-
                 if (
-                    self.state.current_combination.combination_type
+                    self.state.current_combination
+                    and self.state.current_combination.combination_type
                     == CombinationType.SINGLE
+                    and self.state.current_combination.value
+                    == SpecialCard.DRAGON.value.value
                 ):
-                    match self.state.current_combination.value:
-                        case SpecialCard.DOG.value.value:
-                            logging.info(
-                                f"{self.current_player.name} played the Dog and passes the turn to their teammate."
-                            )
-                            self.state.current_player_idx = (
-                                self.state.current_player_idx + 2
-                            ) % NUM_PLAYERS
-                            return
-                        case SpecialCard.PHOENIX.value.value:
-                            self.state.current_combination.value = (
-                                self.state.card_stack[-2].value + 0.5
-                                if len(self.state.card_stack) > 1
-                                else NORMAL_CARD_VALUES[0]
-                            )
-                        case SpecialCard.DRAGON.value.value:
-                            if play_argument is None:
-                                msg = "Dragon stack recipient id must be provided when playing the Dragon."
-                                raise InvalidPlayError(msg)
-                            self.state.dragon_stack_recipient_id = play_argument
-                            if (
-                                self.state.dragon_stack_recipient_id < 0
-                                or self.state.dragon_stack_recipient_id >= NUM_PLAYERS
-                            ):
-                                msg = f"Dragon stack recipient id must be between 0 and {NUM_PLAYERS - 1}."
-                                raise InvalidPlayError(msg)
-                            elif (
-                                self.state.dragon_stack_recipient_id % 2
-                                == self.state.winning_player_idx % 2
-                            ):
-                                msg = "Dragon stack recipient cannot be on the same team as the player who played the Dragon."
-                                raise InvalidPlayError(msg)
-                        case SpecialCard.MAH_JONG.value.value:
-                            if (
-                                play_argument is None
-                                or play_argument not in NORMAL_CARD_VALUES
-                            ):
-                                msg = "A valid card value must be provided when playing the Mah Jong."
-                                raise InvalidPlayError(msg)
-                            self.state.current_wish = play_argument
-                            logging.info(
-                                f"{self.current_player.name} wishes for card value {self.state.current_wish}."
-                            )
+                    logging.info(
+                        f"{self.winning_player.name} wins the single card round and collects the card stack."
+                    )
+                    if self.state.dragon_stack_recipient_id is None:
+                        msg = "Dragon stack recipient id is not set."
+                        raise RuntimeError(msg)
 
-        self.state.current_player_idx = (
-            self.state.current_player_idx + 1
-        ) % NUM_PLAYERS
+                    self.players[
+                        self.state.dragon_stack_recipient_id
+                    ].state.card_stack.extend(self.state.card_stack)
+                else:
+                    self.winning_player.state.card_stack.extend(self.state.card_stack)
+                self.state.current_combination = None
+                self.state.card_stack.clear()
+        elif card_play == "tichu":
+            if self.current_player.state.grand_tichu_called:
+                msg = "Grand Tichu was already called."
+                raise InvalidPlayError(msg)
+            if len(self.current_player.state.hand) != HAND_SIZE:
+                msg = (
+                    "Tichu can only be called at the start of a turn with a full hand."
+                )
+                raise InvalidPlayError(msg)
+            logging.info(f"{self.current_player.name} has called Tichu!")
+            self.current_player.state.tichu_called = True
+            self.add_play_log_entry(card_play)
+            return
+        else:
+            cards, play_argument = card_play
+            if not all([card in current_hand for card in cards]):
+                msg = "Play contains cards that are not in the current players hand."
+                raise InvalidPlayError(msg)
+
+            next_combination = Combination.from_cards(list(cards))
+            if next_combination is None:
+                msg = "Cards are not a valid combination."
+                raise InvalidPlayError(msg)
+            if (
+                self.state.current_combination is not None
+                and not next_combination.can_be_played_on(
+                    self.state.current_combination
+                )
+            ):
+                msg = "Played combination must be of the same kind as the current combination and higher than the current combination."
+                raise InvalidPlayError(msg)
+            if self.state.current_wish is not None:
+                if self.state.current_wish in [card.value for card in cards]:
+                    logging.info(
+                        f"{self.current_player.name} has fulfilled the wish for card value {self.state.current_wish}."
+                    )
+                    self.state.current_wish = None
+                elif self.state.current_wish in [
+                    card.value for card in self.current_player.state.hand
+                ]:
+                    if Combination.can_fulfill_wish(
+                        self.state.current_combination,
+                        self.state.current_wish,
+                        self.current_player.state.hand,
+                    ):
+                        msg = f"The played combination does not fulfill the wish for card value {self.state.current_wish}."
+                        raise InvalidPlayError(msg)
+
+            for player in self.players:
+                player.state.has_passed = False
+            self.state.current_combination = next_combination
+            self.state.winning_player_idx = self.state.current_player_idx
+            for card in cards:
+                self.current_player.play_card(card)
+            if len(self.current_player.state.hand) == 0:
+                logging.info(
+                    f"{self.current_player.name} has played all their cards and finished the round!"
+                )
+                self.state.player_rankings.append(self.state.current_player_idx)
+            self.state.card_stack.extend(list(cards))
+
+            self.add_play_log_entry(card_play)
+            logging.info(", ".join([str(card) for card in cards]))
+
+            if (
+                self.state.current_combination.combination_type
+                == CombinationType.SINGLE
+            ):
+                match self.state.current_combination.value:
+                    case SpecialCard.DOG.value.value:
+                        logging.info(
+                            f"{self.current_player.name} played the Dog and passes the turn to their teammate."
+                        )
+                        self.state.current_player_idx = (
+                            self.state.current_player_idx + 2
+                        ) % NUM_PLAYERS
+                        return
+                    case SpecialCard.PHOENIX.value.value:
+                        self.state.current_combination.value = (
+                            self.state.card_stack[-2].value + 0.5
+                            if len(self.state.card_stack) > 1
+                            else NORMAL_CARD_VALUES[0]
+                        )
+                    case SpecialCard.DRAGON.value.value:
+                        if play_argument is None:
+                            msg = "Dragon stack recipient id must be provided when playing the Dragon."
+                            raise InvalidPlayError(msg)
+                        self.state.dragon_stack_recipient_id = play_argument
+                        if (
+                            self.state.dragon_stack_recipient_id < 0
+                            or self.state.dragon_stack_recipient_id >= NUM_PLAYERS
+                        ):
+                            msg = f"Dragon stack recipient id must be between 0 and {NUM_PLAYERS - 1}."
+                            raise InvalidPlayError(msg)
+                        elif (
+                            self.state.dragon_stack_recipient_id % 2
+                            == self.state.winning_player_idx % 2
+                        ):
+                            msg = "Dragon stack recipient cannot be on the same team as the player who played the Dragon."
+                            raise InvalidPlayError(msg)
+                    case SpecialCard.MAH_JONG.value.value:
+                        if (
+                            play_argument is None
+                            or play_argument not in NORMAL_CARD_VALUES
+                        ):
+                            msg = "A valid card value must be provided when playing the Mah Jong."
+                            raise InvalidPlayError(msg)
+                        self.state.current_wish = play_argument
+                        logging.info(
+                            f"{self.current_player.name} wishes for card value {self.state.current_wish}."
+                        )
+
+        next_player_idx = self.state.current_player_idx
+        while (
+            next_player_idx == self.state.current_player_idx
+            or next_player_idx in self.state.player_rankings
+        ):
+            next_player_idx = (next_player_idx + 1) % NUM_PLAYERS
+        self.state.current_player_idx = next_player_idx
 
     def end_round_scoring(self):
         team_scores = [0, 0]

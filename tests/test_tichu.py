@@ -5,6 +5,7 @@ import pytest
 
 from tichu.card import Card, Color, SpecialCard
 from tichu.combination import Combination, CombinationType
+from tichu.player import Player
 from tichu.random_player import RandomPlayer
 from tichu.tichu import (
     GRAND_TICHU_SCORE,
@@ -19,7 +20,7 @@ from tichu.tichu import (
 @pytest.fixture
 def game() -> Tichu:
     """Create a game instance and start a new round."""
-    players = [RandomPlayer(f"Player {i}") for i in range(NUM_PLAYERS)]
+    players: list[Player] = [RandomPlayer(f"Player {i}") for i in range(NUM_PLAYERS)]
     game_instance = Tichu(seed=42)
     game_instance.new_game(players)
     with patch(
@@ -34,7 +35,9 @@ def game() -> Tichu:
 
 class TestStartNewRound:
     def test_grand_tichu_called(self):
-        players = [RandomPlayer(f"Player {i}") for i in range(NUM_PLAYERS)]
+        players: list[Player] = [
+            RandomPlayer(f"Player {i}") for i in range(NUM_PLAYERS)
+        ]
         game = Tichu(seed=42)
         game.new_game(players)
         with patch(
@@ -51,7 +54,7 @@ class TestStartNewRound:
         assert not game.players[2].state.grand_tichu_called
         assert not game.players[3].state.grand_tichu_called
 
-    def test_cards_are_dealt(self, game):
+    def test_cards_are_dealt(self, game: Tichu):
         for player in game.players:
             assert len(player.state.hand) == HAND_SIZE
 
@@ -59,7 +62,7 @@ class TestStartNewRound:
 class TestNextTurnPass:
     """Tests for player passing in next_turn."""
 
-    def test_player_passes_single_card(self, game):
+    def test_player_passes_single_card(self, game: Tichu):
         """Test a player passing during their turn."""
 
         # Set up initial state
@@ -67,14 +70,15 @@ class TestNextTurnPass:
         initial_player_id = game.state.current_player_idx
 
         with patch.object(game.current_player, "get_card_play", return_value="pass"):
-            game.next_turn()
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
         # Player should have marked as passed
         assert game.players[initial_player_id].state.has_passed is True
         # Current player should advance to next player
         assert game.state.current_player_idx == (initial_player_id + 1) % NUM_PLAYERS
 
-    def test_all_players_pass_resets_combination(self, game):
+    def test_all_players_pass_resets_combination(self, game: Tichu):
         """Test that when all players except winner pass, combination resets."""
 
         # Set up game state
@@ -87,9 +91,12 @@ class TestNextTurnPass:
         with patch(
             "tichu.random_player.RandomPlayer.get_card_play", return_value="pass"
         ):
-            game.next_turn()
-            game.next_turn()
-            game.next_turn()
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
         # Combination should be reset
         assert game.state.current_combination is None
@@ -101,21 +108,22 @@ class TestNextTurnPass:
 class TestNextTurnTichu:
     """Tests for Tichu call in next_turn."""
 
-    def test_tichu_call_with_full_hand(self, game):
+    def test_tichu_call_with_full_hand(self, game: Tichu):
         """Test that Tichu can be called with a full hand of 14 cards."""
 
         player = game.current_player
         initial_hand_size = len(player.state.hand)
 
         with patch.object(player, "get_card_play", return_value="tichu"):
-            game.next_turn()
+            play = player.get_card_play()
+            game.next_turn(play)
 
         # Tichu should be marked as called
         assert player.state.tichu_called is True
         # Hand size shouldn't change
         assert len(player.state.hand) == initial_hand_size
 
-    def test_tichu_call_without_full_hand_raises_error(self, game):
+    def test_tichu_call_without_full_hand_raises_error(self, game: Tichu):
         """Test that Tichu cannot be called without a full hand."""
 
         player = game.current_player
@@ -126,13 +134,35 @@ class TestNextTurnTichu:
             patch.object(player, "get_card_play", return_value="tichu"),
             pytest.raises(InvalidPlayError),
         ):
-            game.next_turn()
+            play = player.get_card_play()
+            game.next_turn(play)
 
 
 class TestNextTurnPlayCard:
     """Tests for playing cards in next_turn."""
 
-    def test_play_single_card(self, game):
+    def test_play_single_card_not_in_hand(self, game: Tichu):
+        """Test playing a single card."""
+
+        game.state.current_player_idx = 0
+        player = game.current_player
+        initial_hand_size = len(player.state.hand)
+
+        with (
+            patch.object(
+                player,
+                "get_card_play",
+                return_value=({game.players[1].state.hand[0]}, None),
+            ),
+            pytest.raises(InvalidPlayError),
+        ):
+            play = player.get_card_play()
+            game.next_turn(play)
+
+        assert len(player.state.hand) == initial_hand_size
+        assert game.state.current_combination is None
+
+    def test_play_single_card(self, game: Tichu):
         """Test playing a single card."""
 
         game.state.current_player_idx = 0
@@ -140,8 +170,11 @@ class TestNextTurnPlayCard:
         initial_hand_size = len(player.state.hand)
 
         # Play the first card
-        with patch.object(player, "get_card_play", return_value={0}):
-            game.next_turn()
+        with patch.object(
+            player, "get_card_play", return_value=({player.state.hand[0]}, None)
+        ):
+            play = player.get_card_play()
+            game.next_turn(play)
 
         # Hand size should decrease
         assert len(player.state.hand) == initial_hand_size - 1
@@ -151,32 +184,34 @@ class TestNextTurnPlayCard:
         # Winning player should be updated
         assert game.state.winning_player_idx == 0
 
-    def test_play_pair(self, game):
+    def test_play_pair(self, game: Tichu):
         """Test playing a pair of cards."""
 
         player = game.current_player
         # Find a pair in the hand
         value_counts = {}
-        for i, card in enumerate(player.state.hand):
+        for card in player.state.hand:
             if card.value not in value_counts:
                 value_counts[card.value] = []
-            value_counts[card.value].append(i)
+            value_counts[card.value].append(card)
 
-        pair_indices = next(
-            (indices for indices in value_counts.values() if len(indices) >= 2), None
-        )
+        pair = next((cards for cards in value_counts.values() if len(cards) >= 2), None)
 
-        assert pair_indices
-        play_set = {pair_indices[0], pair_indices[1]}
+        assert pair
+        play_set = {pair[0], pair[1]}
         initial_hand_size = len(player.state.hand)
 
-        with patch.object(player, "get_card_play", return_value=play_set):
-            game.next_turn()
+        with patch.object(player, "get_card_play", return_value=(play_set, None)):
+            play = player.get_card_play()
+            game.next_turn(play)
 
         assert len(player.state.hand) == initial_hand_size - 2
-        assert game.state.current_combination.combination_type == CombinationType.PAIR
+        assert (
+            game.state.current_combination
+            and game.state.current_combination.combination_type == CombinationType.PAIR
+        )
 
-    def test_play_higher_card_after_single(self, game):
+    def test_play_higher_card_after_single(self, game: Tichu):
         """Test playing a higher single card than current combination."""
 
         # Set up initial combination
@@ -188,21 +223,17 @@ class TestNextTurnPlayCard:
         game.state.current_combination.length = 1
 
         player = game.current_player
-        # Find a card with value > 5
-        valid_card_indices = [
-            i for i, card in enumerate(player.state.hand) if card.value > 5
-        ]
+        valid_cards = {card for card in player.state.hand if card.value == 6}
 
         initial_hand_size = len(player.state.hand)
-        with patch.object(
-            player, "get_card_play", return_value={valid_card_indices[0]}
-        ):
-            game.next_turn()
+        with patch.object(player, "get_card_play", return_value=(valid_cards, None)):
+            play = player.get_card_play()
+            game.next_turn(play)
 
         assert len(player.state.hand) == initial_hand_size - 1
         assert game.state.winning_player_idx == 1
 
-    def test_play_lower_card_raises_error(self, game):
+    def test_play_lower_card_raises_error(self, game: Tichu):
         """Test that playing a lower card than current combination raises error."""
 
         # Set up initial combination with high value
@@ -215,18 +246,17 @@ class TestNextTurnPlayCard:
 
         player = game.current_player
         # Find a card with value < 13
-        valid_card_indices = [
-            i for i, card in enumerate(player.state.hand) if card.value < 13
-        ]
+        valid_card = {card for card in player.state.hand if card.value == 12}
 
-        assert valid_card_indices
+        assert valid_card
         with (
-            patch.object(player, "get_card_play", return_value={valid_card_indices[0]}),
+            patch.object(player, "get_card_play", return_value=(valid_card, None)),
             pytest.raises(InvalidPlayError),
         ):
-            game.next_turn()
+            play = player.get_card_play()
+            game.next_turn(play)
 
-    def test_play_non_matching_combination_type_raises_error(self, game):
+    def test_play_non_matching_combination_type_raises_error(self, game: Tichu):
         """Test that playing non-matching combination type raises error."""
 
         # Set up initial pair combination
@@ -237,14 +267,18 @@ class TestNextTurnPlayCard:
         game.state.current_combination.value = 5
         game.state.current_combination.length = 2
 
-        # Try to play a single card
         with (
-            patch.object(game.current_player, "get_card_play", return_value={0}),
+            patch.object(
+                game.current_player,
+                "get_card_play",
+                return_value=({game.current_player.state.hand[0]}, None),
+            ),
             pytest.raises(InvalidPlayError),
         ):
-            game.next_turn()
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
-    def test_bomb_can_always_be_played_over_non_bombs(self, game):
+    def test_bomb_can_always_be_played_over_non_bombs(self, game: Tichu):
         """Test that a bomb can be played over any non-bomb combination."""
 
         # Set up initial pair combination
@@ -262,8 +296,11 @@ class TestNextTurnPlayCard:
             Card(Color.SWORDS, 9),
             Card(Color.STAR, 9),
         ]
-        with patch.object(player, "get_card_play", return_value={0, 1, 2, 3}):
-            game.next_turn()
+        with patch.object(
+            player, "get_card_play", return_value=(set(player.state.hand), None)
+        ):
+            play = player.get_card_play()
+            game.next_turn(play)
             game.state.winning_player_idx = 1
             game.state.current_combination.type = CombinationType.BOMB
 
@@ -271,15 +308,19 @@ class TestNextTurnPlayCard:
 class TestNextTurnSpecialCards:
     """Tests for special card handling in next_turn."""
 
-    def test_play_dog_passes_turn_to_teammate(self, game):
+    def test_play_dog_passes_turn_to_teammate(self, game: Tichu):
         """Test that playing dog passes turn to teammate."""
 
         # Replace current player's first card with dog
         game.state.current_player_idx = 0
-        game.current_player.state.hand[0] = Card(Color.SPECIAL, SpecialCard.DOG.value)
-
-        with patch.object(game.current_player, "get_card_play", return_value={0}):
-            game.next_turn()
+        game.current_player.state.hand = [SpecialCard.DOG.value]
+        with patch.object(
+            game.current_player,
+            "get_card_play",
+            return_value=(set(game.current_player.state.hand), None),
+        ):
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
         # Next player should be teammate (2 positions ahead)
         assert game.state.current_player_idx == 2
@@ -292,68 +333,145 @@ class TestNextTurnSpecialCards:
         game.state.card_stack = [Card(Color.JADE, card_value)]
         game.state.current_combination = Combination(CombinationType.SINGLE, card_value)
         # Replace first card with Phoenix
-        game.current_player.state.hand[0] = Card(
-            Color.SPECIAL, SpecialCard.PHOENIX.value
-        )
+        game.current_player.state.hand = [SpecialCard.PHOENIX.value]
 
-        with patch.object(game.current_player, "get_card_play", return_value={0}):
-            game.next_turn()
+        with patch.object(
+            game.current_player,
+            "get_card_play",
+            return_value=(set(game.current_player.state.hand), None),
+        ):
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
         # Combination should be set with Phoenix
         assert game.state.current_combination is not None
         assert game.state.current_combination.combination_type == CombinationType.SINGLE
         assert game.state.current_combination.value == card_value + 0.5
 
-    def test_play_mahjong_prompts_for_wish(self, game):
+    def test_play_mahjong_wish_is_set(self, game: Tichu):
         """Test that playing Mah Jong prompts for wish value."""
 
         game.state.current_player_idx = 0
         # Replace first card with Mah Jong
-        game.current_player.state.hand[0] = Card(
-            Color.SPECIAL, SpecialCard.MAH_JONG.value
-        )
+        game.current_player.state.hand = [SpecialCard.MAH_JONG.value]
 
         with (
-            patch.object(game.current_player, "get_card_play", return_value={0}),
-            patch.object(game.current_player, "get_mahjong_wish_play", return_value=7),
+            patch.object(
+                game.current_player,
+                "get_card_play",
+                return_value=(set(game.current_player.state.hand), 7),
+            ),
         ):
-            game.next_turn()
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
         # Current wish should be set
         assert game.state.current_wish == 7
 
-    def test_play_dragon_triggers_stack_selection(self, game):
-        """Test that playing dragon and winning triggers stack recipient selection."""
+    def test_play_mahjong_wish_invalid_choice(self, game: Tichu):
+        """Test that playing Mah Jong prompts for wish value."""
 
-        game.state.current_player_idx = 2
-        game.state.winning_player_idx = 3
-        game.players[0].state.has_passed = True
-        game.players[1].state.has_passed = True
-
-        # Replace first card with Dragon
-        game.state.card_stack = [SpecialCard.DRAGON.value]
-        game.state.current_combination = MagicMock()
-        game.state.current_combination.combination_type = CombinationType.SINGLE
-        game.state.current_combination.value = SpecialCard.DRAGON.value
+        game.state.current_player_idx = 0
+        # Replace first card with Mah Jong
+        game.current_player.state.hand = [SpecialCard.MAH_JONG.value]
 
         with (
-            patch.object(game.current_player, "get_card_play", return_value="pass"),
             patch.object(
-                game.winning_player, "get_dragon_stack_recipient_play", return_value=2
+                game.current_player,
+                "get_card_play",
+                return_value=(set(game.current_player.state.hand), 15),
             ),
+            pytest.raises(InvalidPlayError),
         ):
-            game.next_turn()
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
-        # Winning player should not be updated
-        assert game.state.winning_player_idx == 3
-        assert game.state.current_player_idx == 3
-        assert game.players[2].state.card_stack == [SpecialCard.DRAGON.value]
+    def test_play_mahjong_wish_invalid(self, game: Tichu):
+        """Test that playing Mah Jong prompts for wish value."""
+
+        game.state.current_player_idx = 0
+        # Replace first card with Mah Jong
+        game.current_player.state.hand = [SpecialCard.MAH_JONG.value]
+
+        with (
+            patch.object(
+                game.current_player,
+                "get_card_play",
+                return_value=(set(game.current_player.state.hand), None),
+            ),
+            pytest.raises(InvalidPlayError),
+        ):
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
+
+    def test_play_dragon_triggers_stack_selection(self, game: Tichu):
+        """Test that playing dragon and winning triggers stack recipient selection."""
+
+        game.state.current_player_idx = 0
+        game.current_player.state.hand = [Card(Color.JADE, 2), SpecialCard.DRAGON.value]
+
+        with patch(
+            "tichu.random_player.RandomPlayer.get_card_play",
+            side_effect=[
+                ({game.current_player.state.hand[1]}, 1),
+                "pass",
+                "pass",
+                "pass",
+            ],
+        ):
+            for player in game.players:
+                play = player.get_card_play()
+                game.next_turn(play)
+
+        assert game.state.winning_player_idx == 0
+        assert game.state.current_player_idx == 0
+        assert game.players[1].state.card_stack == [SpecialCard.DRAGON.value]
+
+    def test_play_dragon_stack_selection_invalid_player(self, game: Tichu):
+        """Test that playing dragon and winning triggers stack recipient selection."""
+
+        game.state.current_player_idx = 0
+        game.current_player.state.hand = [SpecialCard.DRAGON.value]
+
+        with (
+            patch(
+                "tichu.random_player.RandomPlayer.get_card_play",
+                side_effect=[
+                    ({game.current_player.state.hand[0]}, 2),
+                    "pass",
+                    "pass",
+                    "pass",
+                ],
+            ),
+            pytest.raises(InvalidPlayError),
+        ):
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
+
+    def test_play_dragon_stack_selection_invalid(self, game: Tichu):
+        """Test that playing dragon and winning triggers stack recipient selection."""
+
+        game.state.current_player_idx = 0
+        game.current_player.state.hand = [SpecialCard.DRAGON.value]
+
+        with (
+            patch(
+                "tichu.random_player.RandomPlayer.get_card_play",
+                side_effect=[
+                    ({game.current_player.state.hand[0]}, None),
+                    "pass",
+                    "pass",
+                    "pass",
+                ],
+            ),
+            pytest.raises(InvalidPlayError),
+        ):
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
 
 class TestNextTurnWish:
-    def test_player_can_play_card_if_wish_is_not_possible(self, game):
-        """Test that a player with no cards is skipped."""
-
+    def test_player_can_play_card_if_wish_is_not_possible(self, game: Tichu):
         game.state.current_wish = 2
         game.state.current_combination = MagicMock()
         game.state.current_combination.combination_type = CombinationType.SINGLE
@@ -363,12 +481,17 @@ class TestNextTurnWish:
         game.state.current_player_idx = 1
         game.current_player.state.hand = [Card(Color.PAGODE, 14)]
 
-        with patch.object(game.current_player, "get_card_play", return_value={0}):
-            game.next_turn()
+        with (
+            patch.object(
+                game.current_player,
+                "get_card_play",
+                return_value=(set(game.current_player.state.hand), None),
+            ),
+        ):
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
-    def test_player_can_not_play_card_if_wish_is_possible(self, game):
-        """Test that a player with no cards is skipped."""
-
+    def test_player_can_not_play_card_if_wish_is_possible(self, game: Tichu):
         game.state.current_wish = 2
         game.state.current_combination = MagicMock()
         game.state.current_combination.combination_type = CombinationType.SINGLE
@@ -385,28 +508,34 @@ class TestNextTurnWish:
         ]
 
         with (
-            patch.object(game.current_player, "get_card_play", return_value={0}),
+            patch.object(
+                game.current_player,
+                "get_card_play",
+                return_value=(set(game.current_player.state.hand), None),
+            ),
             pytest.raises(InvalidPlayError),
         ):
-            game.next_turn()
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
 
 class TestNextTurnEdgeCases:
     """Tests for edge cases in next_turn."""
 
-    def test_player_with_no_cards_is_skipped(self, game):
+    def test_player_with_no_cards_is_skipped(self, game: Tichu):
         """Test that a player with no cards is skipped."""
 
         game.state.current_player_idx = 0
-        game.state.player_rankings = [0]
+        game.state.player_rankings = [1]
         initial_player_id = game.state.current_player_idx
 
-        game.next_turn()
+        play = "pass"
+        game.next_turn(play)
 
         # Should advance to next player
-        assert game.state.current_player_idx == (initial_player_id + 1) % NUM_PLAYERS
+        assert game.state.current_player_idx == initial_player_id + 2
 
-    def test_invalid_card_index_raises_error(self, game):
+    def test_invalid_card_raises_error(self, game: Tichu):
         """Test that invalid card index raises error."""
 
         game.state.current_player_idx = 0
@@ -414,26 +543,36 @@ class TestNextTurnEdgeCases:
 
         with (
             patch.object(
-                game.current_player, "get_card_play", return_value={hand_size + 10}
+                game.current_player,
+                "get_card_play",
+                return_value=({Card(Color.JADE, 9)}, None),
             ),
             pytest.raises(InvalidPlayError),
-        ):  # index out of range
-            game.next_turn()
+        ):
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
-    def test_turn_advances_to_next_player(self, game):
+    def test_turn_advances_to_next_player(self, game: Tichu):
         """Test that turn advances to next player after valid play."""
 
         initial_player_id = game.state.current_player_idx
 
-        with patch.object(game.current_player, "get_card_play", return_value={2}):
-            game.next_turn()
+        with patch.object(
+            game.current_player,
+            "get_card_play",
+            return_value=({game.current_player.state.hand[1]}, None),
+        ):
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
         # Current player should advance
         assert game.state.current_player_idx == (initial_player_id + 1) % NUM_PLAYERS
 
     def test_reproducible_game_with_seed(self):
         """Test that games with same seed produce same hand distributions."""
-        players = [RandomPlayer(f"Player {i}") for i in range(NUM_PLAYERS)]
+        players: list[Player] = [
+            RandomPlayer(f"Player {i}") for i in range(NUM_PLAYERS)
+        ]
         game1 = Tichu(seed=123)
         game1.new_game(players)
         with patch(
@@ -470,37 +609,52 @@ class TestNextTurnEdgeCases:
 class TestNextTurnGameFlow:
     """Tests for overall game flow in next_turn."""
 
-    def test_card_stack_accumulates(self, game):
+    def test_card_stack_accumulates(self, game: Tichu):
         """Test that played cards accumulate in card stack."""
 
         game.state.current_player_idx = 0
         initial_stack_size = len(game.state.card_stack)
 
-        with patch.object(game.current_player, "get_card_play", return_value={0}):
-            game.next_turn()
+        with patch.object(
+            game.current_player,
+            "get_card_play",
+            return_value=({game.current_player.state.hand[1]}, None),
+        ):
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
         # Card stack should have increased
         assert len(game.state.card_stack) > initial_stack_size
 
-    def test_winning_player_is_updated(self, game):
+    def test_winning_player_is_updated(self, game: Tichu):
         """Test that winning player is updated when cards are played."""
 
         game.state.current_player_idx = 1
-        game.state.winning_player_idx = None
+        game.state.winning_player_idx = 1
 
-        with patch.object(game.current_player, "get_card_play", return_value={1}):
-            game.next_turn()
+        with patch.object(
+            game.current_player,
+            "get_card_play",
+            return_value=({game.current_player.state.hand[1]}, None),
+        ):
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
         # Winning player should be updated to current player
         assert game.state.winning_player_idx == 1
 
-    def test_current_combination_is_set(self, game):
+    def test_current_combination_is_set(self, game: Tichu):
         """Test that current combination is set after valid play."""
 
         assert game.state.current_combination is None
 
-        with patch.object(game.current_player, "get_card_play", return_value={1}):
-            game.next_turn()
+        with patch.object(
+            game.current_player,
+            "get_card_play",
+            return_value=({game.current_player.state.hand[1]}, None),
+        ):
+            play = game.current_player.get_card_play()
+            game.next_turn(play)
 
         # Current combination should be set
         assert game.state.current_combination is not None
@@ -510,7 +664,7 @@ class TestNextTurnGameFlow:
 class TestEndRoundScoring:
     """Tests for end_round_scoring function."""
 
-    def test_same_team_finish_first_and_second_bonus(self, game):
+    def test_same_team_finish_first_and_second_bonus(self, game: Tichu):
         """Test that both players from same team finishing first and second grants 200 points."""
 
         # Team 0 (players 0 and 2) finish first and second
@@ -524,7 +678,7 @@ class TestEndRoundScoring:
         # Team 1 score should be unchanged
         assert game.state.scores[1] == 0
 
-    def test_tichu_bonus_first_place(self, game):
+    def test_tichu_bonus_first_place(self, game: Tichu):
         """Test that Tichu called and finishing first grants 100 point bonus."""
 
         # Player 0 called Tichu and finished first
@@ -538,7 +692,7 @@ class TestEndRoundScoring:
         # Team 0 should gain 100 for Tichu bonus
         assert game.state.scores[0] == initial_team_score + TICHU_SCORE
 
-    def test_grand_tichu_bonus_first_place(self, game):
+    def test_grand_tichu_bonus_first_place(self, game: Tichu):
         """Test that Tichu called and finishing first grants 200 point bonus."""
         # Player 0 called grand Tichu and finished first
 
@@ -552,7 +706,7 @@ class TestEndRoundScoring:
         # Team 0 should gain 200 for Tichu bonus
         assert game.state.scores[0] == initial_team_score + GRAND_TICHU_SCORE
 
-    def test_tichu_penalty_not_first_place(self, game):
+    def test_tichu_penalty_not_first_place(self, game: Tichu):
         """Test that Tichu called but not finishing first incurs 100 point penalty."""
 
         # Player 1 called Tichu but didn't finish first
@@ -565,7 +719,7 @@ class TestEndRoundScoring:
         # Team 1 should lose 100 for failed Tichu
         assert game.state.scores[1] <= initial_team_score - TICHU_SCORE
 
-    def test_card_scoring_from_opposing_player(self, game):
+    def test_card_scoring_from_opposing_player(self, game: Tichu):
         """Test that opposing player's hand cards are scored."""
 
         # Set up rankings
@@ -578,7 +732,7 @@ class TestEndRoundScoring:
         # Score from player 3's remaining hand should be added to team 0
         assert game.state.scores[0] == initial_team_score + hand_score
 
-    def test_card_scoring_from_losing_player(self, game):
+    def test_card_scoring_from_losing_player(self, game: Tichu):
         """Test that losing player's hand cards are scored."""
 
         # Set up rankings
@@ -597,7 +751,7 @@ class TestEndRoundScoring:
         # Score from player 3's remaining hand should be added to team 0
         assert game.state.scores[0] == initial_team_score + stack_score
 
-    def test_card_stack_scoring(self, game):
+    def test_card_stack_scoring(self, game: Tichu):
         """Test that card stacks are scored properly."""
 
         # Set up game state
@@ -615,7 +769,7 @@ class TestEndRoundScoring:
         # Score should include card stack
         assert game.state.scores[0] == initial_team_score + card_score
 
-    def test_multiple_player_tichu_calls(self, game):
+    def test_multiple_player_tichu_calls(self, game: Tichu):
         """Test scoring when multiple players called Tichu."""
 
         # Player 0 (team 0) called Tichu and finished first
@@ -635,7 +789,7 @@ class TestEndRoundScoring:
         # Team 1 loses 100 for failed Tichu
         assert game.state.scores[1] == initial_team_1_score - 100
 
-    def test_score_accumulation_across_rounds(self, game):
+    def test_score_accumulation_across_rounds(self, game: Tichu):
         """Test that scores accumulate across multiple calls to end_round_scoring."""
         # First round
         game.state.player_rankings = [0, 2]
@@ -658,7 +812,7 @@ class TestEndRoundScoring:
             game.state.scores[0] == first_round_team_0_score or game.state.scores[1] > 0
         )
 
-    def test_all_players_ranked(self, game):
+    def test_all_players_ranked(self, game: Tichu):
         """Test scoring when all players are ranked (3 finished, 1 remaining)."""
 
         game.state.player_rankings = [0, 1, 2]
@@ -671,7 +825,7 @@ class TestEndRoundScoring:
         assert game.state.scores[0] >= 0
         assert game.state.scores[1] >= 0
 
-    def test_dragon_card_in_stack_scores(self, game):
+    def test_dragon_card_in_stack_scores(self, game: Tichu):
         """Test that dragon card in card stack is properly scored."""
 
         game.state.player_rankings = [0, 1, 2]
@@ -690,7 +844,7 @@ class TestEndRoundScoring:
 class TestPushCards:
     """Tests for push_cards function."""
 
-    def test_pushed_cards_in_someone_elses_hand(self, game):
+    def test_pushed_cards_in_someone_elses_hand(self, game: Tichu):
         """Test that pushed cards are in someone else's hand."""
 
         original_hand_size = len(game.players[0].state.hand)
@@ -701,7 +855,7 @@ class TestPushCards:
         for player in game.players:
             assert len(player.state.hand) == original_hand_size
 
-    def test_pushed_cards_are_valid_cards(self, game):
+    def test_pushed_cards_are_valid_cards(self, game: Tichu):
         """Test that pushed cards are actual cards from the hand."""
 
         # Save original hands
@@ -722,7 +876,7 @@ class TestPushCards:
         # Same number of cards
         assert len(all_cards_before) == len(all_cards_after)
 
-    def test_push_rotation_player_0_to_3(self, game):
+    def test_push_rotation_player_0_to_3(self, game: Tichu):
         """Test push from player 0 goes to player 3 (left), player 2 (partner), player 1 (right)."""
 
         # Get specific cards to track
@@ -750,7 +904,7 @@ class TestPushCards:
         assert player_2_received
         assert player_3_received
 
-    def test_sequential_push_from_all_players(self, game):
+    def test_sequential_push_from_all_players(self, game: Tichu):
         """Test that get_push is called sequentially for each player."""
 
         call_sequence = []

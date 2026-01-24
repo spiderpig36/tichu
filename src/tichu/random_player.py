@@ -16,7 +16,7 @@ class RandomPlayer(Player):
         if not possible_plays:
             return "pass"
         chosen_play = random.choice(possible_plays)
-        argument = -1
+        argument = None
         if SpecialCard.DRAGON.value in chosen_play:
             argument = random.choice(self.get_opponents())
         if SpecialCard.MAH_JONG.value in chosen_play:
