@@ -10,7 +10,7 @@ from tichu import (
     NUM_PLAYERS,
     TICHU_SCORE,
 )
-from tichu.card import NORMAL_CARD_VALUES, Card, Color, SpecialCard
+from tichu.card import NORMAL_CARD_VALUES, Card, Color, DOG, MAH_JONG, PHOENIX, DRAGON
 from tichu.combination import Combination, CombinationType
 from tichu.human_player import HumanPlayer
 from tichu.llm_player import LLMPlayer
@@ -56,7 +56,7 @@ class Tichu:
             for value in NORMAL_CARD_VALUES:
                 card = Card(color, value)
                 deck.append(card)
-        deck.extend([specialCard.value for specialCard in SpecialCard])
+        deck.extend([DOG, MAH_JONG, PHOENIX, DRAGON])
 
         self.random.shuffle(deck)
         for i, card in enumerate(deck):
@@ -147,8 +147,7 @@ class Tichu:
                     self.state.current_combination
                     and self.state.current_combination.combination_type
                     == CombinationType.SINGLE
-                    and self.state.current_combination.value
-                    == SpecialCard.DRAGON.value.value
+                    and self.state.current_combination.value == DRAGON.value
                 ):
                     logging.info(
                         f"{self.winning_player.name} wins the single card round and collects the card stack."
@@ -233,7 +232,7 @@ class Tichu:
                 == CombinationType.SINGLE
             ):
                 match self.state.current_combination.value:
-                    case SpecialCard.DOG.value.value:
+                    case DOG.value:
                         logging.info(
                             f"{self.current_player.name} played the Dog and passes the turn to their teammate."
                         )
@@ -241,13 +240,13 @@ class Tichu:
                             self.state.current_player_idx + 2
                         ) % NUM_PLAYERS
                         return
-                    case SpecialCard.PHOENIX.value.value:
+                    case PHOENIX.value:
                         self.state.current_combination.value = (
                             self.state.card_stack[-2].value + 0.5
                             if len(self.state.card_stack) > 1
                             else NORMAL_CARD_VALUES[0]
                         )
-                    case SpecialCard.DRAGON.value.value:
+                    case DRAGON.value:
                         if play_argument is None:
                             msg = "Dragon stack recipient id must be provided when playing the Dragon."
                             raise InvalidPlayError(msg)
@@ -264,7 +263,7 @@ class Tichu:
                         ):
                             msg = "Dragon stack recipient cannot be on the same team as the player who played the Dragon."
                             raise InvalidPlayError(msg)
-                    case SpecialCard.MAH_JONG.value.value:
+                    case MAH_JONG.value:
                         if (
                             play_argument is None
                             or play_argument not in NORMAL_CARD_VALUES

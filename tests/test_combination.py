@@ -1,6 +1,6 @@
 import pytest
 
-from tichu.card import Card, Color, SpecialCard
+from tichu.card import Card, Color, DOG, MAH_JONG, PHOENIX, DRAGON
 from tichu.combination import Combination, CombinationType
 
 
@@ -10,13 +10,13 @@ from tichu.combination import Combination, CombinationType
         ([Card(Color.JADE, 10)], CombinationType.SINGLE, 10, 1),
         ([Card(Color.JADE, 5), Card(Color.SWORDS, 5)], CombinationType.PAIR, 5, 1),
         (
-            [Card(Color.JADE, 8), SpecialCard.PHOENIX.value],
+            [Card(Color.JADE, 8), PHOENIX],
             CombinationType.PAIR,
             8,
             1,
         ),
         (
-            [SpecialCard.PHOENIX.value, Card(Color.SWORDS, 13)],
+            [PHOENIX, Card(Color.SWORDS, 13)],
             CombinationType.PAIR,
             13,
             1,
@@ -31,7 +31,7 @@ from tichu.combination import Combination, CombinationType
             [
                 Card(Color.JADE, 12),
                 Card(Color.SWORDS, 12),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
             ],
             CombinationType.TRIPLE,
             12,
@@ -51,7 +51,7 @@ from tichu.combination import Combination, CombinationType
         ),
         (
             [
-                SpecialCard.MAH_JONG.value,
+                MAH_JONG,
                 Card(Color.JADE, 2),
                 Card(Color.SWORDS, 3),
                 Card(Color.STAR, 4),
@@ -79,7 +79,7 @@ from tichu.combination import Combination, CombinationType
                 Card(Color.JADE, 9),
                 Card(Color.SWORDS, 10),
                 Card(Color.STAR, 11),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.PAGODE, 13),
             ],
             CombinationType.STRAIGHT,
@@ -92,7 +92,7 @@ from tichu.combination import Combination, CombinationType
                 Card(Color.SWORDS, 10),
                 Card(Color.STAR, 11),
                 Card(Color.PAGODE, 12),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
             ],
             CombinationType.STRAIGHT,
             13,
@@ -100,7 +100,7 @@ from tichu.combination import Combination, CombinationType
         ),
         (
             [
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.SWORDS, 11),
                 Card(Color.STAR, 12),
                 Card(Color.PAGODE, 13),
@@ -138,7 +138,7 @@ from tichu.combination import Combination, CombinationType
             [
                 Card(Color.SWORDS, 4),
                 Card(Color.STAR, 4),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.JADE, 3),
             ],
             CombinationType.STAIR,
@@ -151,7 +151,7 @@ from tichu.combination import Combination, CombinationType
                 Card(Color.PAGODE, 2),
                 Card(Color.SWORDS, 4),
                 Card(Color.STAR, 4),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.JADE, 3),
             ],
             CombinationType.STAIR,
@@ -174,7 +174,7 @@ from tichu.combination import Combination, CombinationType
             [
                 Card(Color.JADE, 14),
                 Card(Color.SWORDS, 14),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.JADE, 2),
                 Card(Color.SWORDS, 2),
             ],
@@ -186,7 +186,7 @@ from tichu.combination import Combination, CombinationType
             [
                 Card(Color.JADE, 14),
                 Card(Color.SWORDS, 14),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.JADE, 14),
                 Card(Color.SWORDS, 2),
             ],
@@ -235,7 +235,7 @@ from tichu.combination import Combination, CombinationType
                 Card(Color.JADE, 11),
                 Card(Color.JADE, 12),
                 Card(Color.JADE, 13),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
             ],
             CombinationType.STRAIGHT,
             14,
@@ -264,7 +264,7 @@ def test_valid_combinations(cards, expected_type, expected_value, expected_lengt
             Card(Color.JADE, 7),
         ],
         [
-            SpecialCard.DOG.value,
+            DOG,
             Card(Color.SWORDS, 2),
             Card(Color.STAR, 3),
             Card(Color.PAGODE, 4),
@@ -303,7 +303,7 @@ def test_valid_combinations(cards, expected_type, expected_value, expected_lengt
             Card(Color.SWORDS, 4),
             Card(Color.STAR, 5),
             Card(Color.STAR, 5),
-            SpecialCard.PHOENIX.value,
+            PHOENIX,
             Card(Color.JADE, 8),
         ],
         [
@@ -311,13 +311,13 @@ def test_valid_combinations(cards, expected_type, expected_value, expected_lengt
             Card(Color.STAR, 12),
             Card(Color.JADE, 13),
             Card(Color.SWORDS, 14),
-            SpecialCard.DRAGON.value,
+            DOG,
         ],
         [
             Card(Color.SWORDS, 4),
             Card(Color.SWORDS, 4),
             Card(Color.SWORDS, 5),
-            SpecialCard.PHOENIX.value,
+            PHOENIX,
             Card(Color.JADE, 6),
         ],
         [
@@ -330,7 +330,7 @@ def test_valid_combinations(cards, expected_type, expected_value, expected_lengt
             Card(Color.JADE, 14),
             Card(Color.SWORDS, 14),
             Card(Color.STAR, 14),
-            SpecialCard.PHOENIX.value,
+            PHOENIX,
         ],
         [
             Card(Color.JADE, 2),
@@ -340,8 +340,8 @@ def test_valid_combinations(cards, expected_type, expected_value, expected_lengt
             Card(Color.SWORDS, 5),
             Card(Color.JADE, 3),
         ],
-        [SpecialCard.DOG.value, Card(Color.SWORDS, 2)],
-        [SpecialCard.DRAGON.value, Card(Color.SWORDS, 14)],
+        [DOG, Card(Color.SWORDS, 2)],
+        [DRAGON, Card(Color.SWORDS, 14)],
     ],
 )
 def test_invalid_combinations(cards):
@@ -548,7 +548,7 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             10,
             1,
             11,
-            [Card(Color.JADE, 11), SpecialCard.PHOENIX.value],
+            [Card(Color.JADE, 11), PHOENIX],
             True,
         ),
         (
@@ -575,7 +575,7 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             [
                 Card(Color.JADE, 11),
                 Card(Color.PAGODE, 11),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
             ],
             True,
         ),
@@ -662,7 +662,7 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             [
                 Card(Color.JADE, 14),
                 Card(Color.PAGODE, 14),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.JADE, 3),
                 Card(Color.PAGODE, 3),
             ],
@@ -690,7 +690,7 @@ def test_can_be_played_on_non_bomb_vs_bomb(
             [
                 Card(Color.JADE, 9),
                 Card(Color.PAGODE, 9),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.JADE, 4),
             ],
             False,
@@ -726,7 +726,7 @@ def test_can_be_played_on_non_bomb_vs_bomb(
                 Card(Color.JADE, 7),
                 Card(Color.JADE, 9),
                 Card(Color.PAGODE, 10),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.STAR, 12),
                 Card(Color.JADE, 13),
             ],
@@ -746,7 +746,7 @@ def test_can_be_played_on_non_bomb_vs_bomb(
                 Card(Color.PAGODE, 11),
                 Card(Color.STAR, 12),
                 Card(Color.JADE, 13),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
             ],
             True,
         ),
@@ -761,7 +761,7 @@ def test_can_be_played_on_non_bomb_vs_bomb(
                 Card(Color.JADE, 7),
                 Card(Color.JADE, 9),
                 Card(Color.PAGODE, 10),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.STAR, 12),
                 Card(Color.JADE, 13),
             ],
@@ -777,7 +777,7 @@ def test_can_be_played_on_non_bomb_vs_bomb(
                 Card(Color.JADE, 7),
                 Card(Color.JADE, 9),
                 Card(Color.PAGODE, 10),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.JADE, 13),
             ],
             False,
@@ -850,7 +850,7 @@ def test_can_be_played_on_non_bomb_vs_bomb(
                 Card(Color.SWORDS, 8),
                 Card(Color.STAR, 9),
                 Card(Color.JADE, 9),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
             ],
             True,
         ),
@@ -989,14 +989,14 @@ def test_can_fulfill_wish(
         ),
         (
             Combination(CombinationType.PAIR, 6, 1),
-            [Card(Color.JADE, 7), SpecialCard.PHOENIX.value],
+            [Card(Color.JADE, 7), PHOENIX],
             [
-                {Card(Color.JADE, 7), SpecialCard.PHOENIX.value},
+                {Card(Color.JADE, 7), PHOENIX},
             ],
         ),
         (
             Combination(CombinationType.PAIR, 8, 1),
-            [Card(Color.JADE, 7), SpecialCard.PHOENIX.value],
+            [Card(Color.JADE, 7), PHOENIX],
             [],
         ),
         (
@@ -1180,7 +1180,7 @@ def test_can_fulfill_wish(
             [
                 Card(Color.JADE, 3),
                 Card(Color.PAGODE, 4),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.JADE, 6),
                 Card(Color.PAGODE, 7),
             ],
@@ -1188,7 +1188,7 @@ def test_can_fulfill_wish(
                 {
                     Card(Color.JADE, 3),
                     Card(Color.PAGODE, 4),
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                     Card(Color.JADE, 6),
                     Card(Color.PAGODE, 7),
                 },
@@ -1202,7 +1202,7 @@ def test_can_fulfill_wish(
                 Card(Color.SWORDS, 5),
                 Card(Color.JADE, 6),
                 Card(Color.PAGODE, 7),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
             ],
             [
                 {
@@ -1213,7 +1213,7 @@ def test_can_fulfill_wish(
                     Card(Color.PAGODE, 7),
                 },
                 {
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                     Card(Color.PAGODE, 4),
                     Card(Color.SWORDS, 5),
                     Card(Color.JADE, 6),
@@ -1221,7 +1221,7 @@ def test_can_fulfill_wish(
                 },
                 {
                     Card(Color.JADE, 3),
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                     Card(Color.SWORDS, 5),
                     Card(Color.JADE, 6),
                     Card(Color.PAGODE, 7),
@@ -1229,7 +1229,7 @@ def test_can_fulfill_wish(
                 {
                     Card(Color.JADE, 3),
                     Card(Color.PAGODE, 4),
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                     Card(Color.JADE, 6),
                     Card(Color.PAGODE, 7),
                 },
@@ -1237,7 +1237,7 @@ def test_can_fulfill_wish(
                     Card(Color.JADE, 3),
                     Card(Color.PAGODE, 4),
                     Card(Color.SWORDS, 5),
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                     Card(Color.PAGODE, 7),
                 },
                 {
@@ -1245,14 +1245,14 @@ def test_can_fulfill_wish(
                     Card(Color.PAGODE, 4),
                     Card(Color.SWORDS, 5),
                     Card(Color.JADE, 6),
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                 },
                 {
                     Card(Color.PAGODE, 4),
                     Card(Color.SWORDS, 5),
                     Card(Color.JADE, 6),
                     Card(Color.PAGODE, 7),
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                 },
             ],
         ),
@@ -1264,7 +1264,7 @@ def test_can_fulfill_wish(
                 Card(Color.SWORDS, 5),
                 Card(Color.JADE, 6),
                 Card(Color.PAGODE, 7),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
             ],
             [],
         ),
@@ -1350,7 +1350,7 @@ def test_can_fulfill_wish(
                 Card(Color.SWORDS, 7),
                 Card(Color.JADE, 8),
                 Card(Color.STAR, 8),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
             ],
             [
                 {
@@ -1365,35 +1365,35 @@ def test_can_fulfill_wish(
                     Card(Color.PAGODE, 7),
                     Card(Color.SWORDS, 7),
                     Card(Color.JADE, 8),
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                 },
                 {
                     Card(Color.JADE, 7),
                     Card(Color.PAGODE, 7),
                     Card(Color.SWORDS, 7),
                     Card(Color.STAR, 8),
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                 },
                 {
                     Card(Color.JADE, 7),
                     Card(Color.PAGODE, 7),
                     Card(Color.STAR, 8),
                     Card(Color.JADE, 8),
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                 },
                 {
                     Card(Color.JADE, 7),
                     Card(Color.SWORDS, 7),
                     Card(Color.STAR, 8),
                     Card(Color.JADE, 8),
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                 },
                 {
                     Card(Color.PAGODE, 7),
                     Card(Color.SWORDS, 7),
                     Card(Color.STAR, 8),
                     Card(Color.JADE, 8),
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                 },
             ],
         ),
@@ -1404,7 +1404,7 @@ def test_can_fulfill_wish(
                 Card(Color.PAGODE, 7),
                 Card(Color.SWORDS, 7),
                 Card(Color.STAR, 8),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
             ],
             [
                 {
@@ -1412,7 +1412,7 @@ def test_can_fulfill_wish(
                     Card(Color.PAGODE, 7),
                     Card(Color.SWORDS, 7),
                     Card(Color.STAR, 8),
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                 },
             ],
         ),
@@ -1423,7 +1423,7 @@ def test_can_fulfill_wish(
                 Card(Color.PAGODE, 5),
                 Card(Color.SWORDS, 5),
                 Card(Color.STAR, 8),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
             ],
             [],
         ),
@@ -1433,7 +1433,7 @@ def test_can_fulfill_wish(
                 Card(Color.JADE, 5),
                 Card(Color.PAGODE, 5),
                 Card(Color.STAR, 8),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
             ],
             [],
         ),
@@ -1504,14 +1504,14 @@ def test_can_fulfill_wish(
             Combination(CombinationType.STAIR, 6, 2),
             [
                 Card(Color.JADE, 7),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.STAR, 8),
                 Card(Color.SWORDS, 8),
             ],
             [
                 {
                     Card(Color.JADE, 7),
-                    SpecialCard.PHOENIX.value,
+                    PHOENIX,
                     Card(Color.STAR, 8),
                     Card(Color.SWORDS, 8),
                 },
@@ -1521,7 +1521,7 @@ def test_can_fulfill_wish(
             Combination(CombinationType.STAIR, 6, 2),
             [
                 Card(Color.JADE, 3),
-                SpecialCard.PHOENIX.value,
+                PHOENIX,
                 Card(Color.STAR, 4),
                 Card(Color.SWORDS, 4),
             ],

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tichu.card import Card, Color, SpecialCard
+from tichu.card import Card, Color, DOG, MAH_JONG, PHOENIX, DRAGON
 from tichu.combination import Combination, CombinationType
 from tichu.player import Player
 from tichu.random_player import RandomPlayer
@@ -313,7 +313,7 @@ class TestNextTurnSpecialCards:
 
         # Replace current player's first card with dog
         game.state.current_player_idx = 0
-        game.current_player.state.hand = [SpecialCard.DOG.value]
+        game.current_player.state.hand = [DOG]
         with patch.object(
             game.current_player,
             "get_card_play",
@@ -333,7 +333,7 @@ class TestNextTurnSpecialCards:
         game.state.card_stack = [Card(Color.JADE, card_value)]
         game.state.current_combination = Combination(CombinationType.SINGLE, card_value)
         # Replace first card with Phoenix
-        game.current_player.state.hand = [SpecialCard.PHOENIX.value]
+        game.current_player.state.hand = [PHOENIX]
 
         with patch.object(
             game.current_player,
@@ -353,7 +353,7 @@ class TestNextTurnSpecialCards:
 
         game.state.current_player_idx = 0
         # Replace first card with Mah Jong
-        game.current_player.state.hand = [SpecialCard.MAH_JONG.value]
+        game.current_player.state.hand = [MAH_JONG]
 
         with (
             patch.object(
@@ -373,7 +373,7 @@ class TestNextTurnSpecialCards:
 
         game.state.current_player_idx = 0
         # Replace first card with Mah Jong
-        game.current_player.state.hand = [SpecialCard.MAH_JONG.value]
+        game.current_player.state.hand = [MAH_JONG]
 
         with (
             patch.object(
@@ -391,7 +391,7 @@ class TestNextTurnSpecialCards:
 
         game.state.current_player_idx = 0
         # Replace first card with Mah Jong
-        game.current_player.state.hand = [SpecialCard.MAH_JONG.value]
+        game.current_player.state.hand = [MAH_JONG]
 
         with (
             patch.object(
@@ -408,7 +408,7 @@ class TestNextTurnSpecialCards:
         """Test that playing dragon and winning triggers stack recipient selection."""
 
         game.state.current_player_idx = 0
-        game.current_player.state.hand = [Card(Color.JADE, 2), SpecialCard.DRAGON.value]
+        game.current_player.state.hand = [Card(Color.JADE, 2), DRAGON]
 
         with patch(
             "tichu.random_player.RandomPlayer.get_card_play",
@@ -425,13 +425,13 @@ class TestNextTurnSpecialCards:
 
         assert game.state.winning_player_idx == 0
         assert game.state.current_player_idx == 0
-        assert game.players[1].state.card_stack == [SpecialCard.DRAGON.value]
+        assert game.players[1].state.card_stack == [DRAGON]
 
     def test_play_dragon_stack_selection_invalid_player(self, game: Tichu):
         """Test that playing dragon and winning triggers stack recipient selection."""
 
         game.state.current_player_idx = 0
-        game.current_player.state.hand = [SpecialCard.DRAGON.value]
+        game.current_player.state.hand = [DRAGON]
 
         with (
             patch(
@@ -452,7 +452,7 @@ class TestNextTurnSpecialCards:
         """Test that playing dragon and winning triggers stack recipient selection."""
 
         game.state.current_player_idx = 0
-        game.current_player.state.hand = [SpecialCard.DRAGON.value]
+        game.current_player.state.hand = [DRAGON]
 
         with (
             patch(
@@ -741,7 +741,7 @@ class TestEndRoundScoring:
         game.players[3].state.card_stack = [
             Card(Color.JADE, 5),
             Card(Color.SWORDS, 10),
-            SpecialCard.DRAGON.value,
+            DRAGON,
         ]
         stack_score = Card.count_card_scores(game.players[3].state.card_stack)
         initial_team_score = game.state.scores[0]
@@ -831,7 +831,7 @@ class TestEndRoundScoring:
         game.state.player_rankings = [0, 1, 2]
 
         # Add dragon to winner's card stack (dragon is worth 25 points)
-        dragon = SpecialCard.DRAGON.value
+        dragon = DRAGON
         game.players[0].state.card_stack.append(dragon)
 
         initial_team_score = game.state.scores[0]

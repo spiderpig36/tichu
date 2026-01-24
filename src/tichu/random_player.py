@@ -1,7 +1,7 @@
 import random
 
 from tichu import HAND_SIZE, NUM_PLAYERS
-from tichu.card import NORMAL_CARD_VALUES, Card, Color, SpecialCard
+from tichu.card import NORMAL_CARD_VALUES, Card, Color, DOG, MAH_JONG, PHOENIX, DRAGON
 from tichu.combination import Combination
 from tichu.player import Player
 
@@ -17,9 +17,9 @@ class RandomPlayer(Player):
             return "pass"
         chosen_play = random.choice(possible_plays)
         argument = None
-        if SpecialCard.DRAGON.value in chosen_play:
+        if DRAGON in chosen_play:
             argument = random.choice(self.get_opponents())
-        if SpecialCard.MAH_JONG.value in chosen_play:
+        if MAH_JONG in chosen_play:
             argument = random.choice(NORMAL_CARD_VALUES)
         return (chosen_play, argument)
 

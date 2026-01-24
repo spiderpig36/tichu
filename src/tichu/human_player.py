@@ -1,7 +1,7 @@
 import logging
 
 from tichu import HAND_SIZE, NUM_PLAYERS
-from tichu.card import NORMAL_CARD_VALUES, SpecialCard
+from tichu.card import NORMAL_CARD_VALUES, DOG, MAH_JONG, PHOENIX, DRAGON
 from tichu.player import Player
 
 
@@ -46,9 +46,9 @@ class HumanPlayer(Player):
             card_indices = [int(idx.strip()) for idx in play.split(",")]
             cards = set(self.state.hand[i] for i in card_indices)
             argument = None
-            if SpecialCard.DRAGON.value in cards:
+            if DRAGON in cards:
                 argument = self.get_dragon_stack_recipient()
-            elif SpecialCard.MAH_JONG.value in cards:
+            elif MAH_JONG in cards:
                 argument = self.get_mahjong_wish()
             return (cards, argument)
         except ValueError:

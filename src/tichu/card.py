@@ -25,30 +25,32 @@ class Card:
         self.value = value
 
     def get_score(self) -> int:
-        if self.color == Color.SPECIAL:
-            match self:
-                case SpecialCard.DOG.value:
-                    return 0
-                case SpecialCard.PHOENIX.value:
-                    return -25
-                case SpecialCard.DRAGON.value:
-                    return 25
-        else:
-            match self.value:
-                case 5:
-                    return 5
-                case 10 | 13:
-                    return 10
-        return 0
+        match self.value:
+            case 50:
+                return -25
+            case 100:
+                return 25
+            case 5:
+                return 5
+            case 10 | 13:
+                return 10
+            case _:
+                return 0
 
     @staticmethod
     def count_card_scores(cards: list["Card"]) -> int:
         return reduce(lambda total, card: total + card.get_score(), cards, 0)
 
     def __str__(self):
-        if self.color == Color.SPECIAL:
-            return str(SpecialCard(self))
         match self.value:
+            case 0:
+                return f"Dog"
+            case 1:
+                return f"Mah Jong"
+            case 50:
+                return f"Phoenix"
+            case 100:
+                return f"Dragon"
             case 11:
                 return f"{self.color.name} Jack"
             case 12:
@@ -70,11 +72,7 @@ class Card:
         return hash((self.color, self.value))
 
 
-class SpecialCard(Enum):
-    DOG = Card(color=Color.SPECIAL, value=0)
-    MAH_JONG = Card(color=Color.SPECIAL, value=1)
-    PHOENIX = Card(color=Color.SPECIAL, value=50)
-    DRAGON = Card(color=Color.SPECIAL, value=100)
-
-    def __str__(self):
-        return self.name
+DOG = Card(Color.SPECIAL, 0)
+MAH_JONG = Card(Color.SPECIAL, 1)
+PHOENIX = Card(Color.SPECIAL, 50)
+DRAGON = Card(Color.SPECIAL, 100)
