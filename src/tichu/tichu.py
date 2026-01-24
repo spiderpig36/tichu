@@ -119,9 +119,12 @@ class Tichu:
     def add_play_log_entry(self, play: CardPlay):
         self.state.play_log.append((self.state.current_player_idx, play))
 
-    def next_turn(self, card_play: CardPlay):
-        current_hand = self.current_player.state.hand
+    def next_turn(self, player_idx: int, card_play: CardPlay):
+        player = self.players[player_idx]
+        current_hand = player.state.hand
         if card_play == "pass":
+            if player_idx != self.state.current_player_idx:
+                raise InvalidPlayError("Only the current player can pass.")
             if self.state.current_wish is not None and Combination.can_fulfill_wish(
                 self.state.current_combination,
                 self.state.current_wish,
@@ -129,9 +132,9 @@ class Tichu:
             ):
                 msg = f"You can fulfill the wish for card value {self.state.current_wish} and cannot pass."
                 raise InvalidPlayError(msg)
-            logging.info(f"{self.current_player.name} has passed.")
+            logging.info(f"{player.name} has passed.")
             self.add_play_log_entry(card_play)
-            self.current_player.state.has_passed = True
+            player.state.has_passed = True
             if all(
                 player.state.has_passed
                 for idx, player in enumerate(self.players)
@@ -164,16 +167,16 @@ class Tichu:
                 self.state.current_combination = None
                 self.state.card_stack.clear()
         elif card_play == "tichu":
-            if self.current_player.state.grand_tichu_called:
+            if player.state.grand_tichu_called:
                 msg = "Grand Tichu was already called."
                 raise InvalidPlayError(msg)
-            if len(self.current_player.state.hand) != HAND_SIZE:
+            if len(player.state.hand) != HAND_SIZE:
                 msg = (
                     "Tichu can only be called at the start of a turn with a full hand."
                 )
                 raise InvalidPlayError(msg)
-            logging.info(f"{self.current_player.name} has called Tichu!")
-            self.current_player.state.tichu_called = True
+            logging.info(f"{player.name} has called Tichu!")
+            player.state.tichu_called = True
             self.add_play_log_entry(card_play)
             return
         else:
@@ -194,34 +197,43 @@ class Tichu:
             ):
                 msg = "Played combination must be of the same kind as the current combination and higher than the current combination."
                 raise InvalidPlayError(msg)
+            if (
+                next_combination.combination_type
+                not in (CombinationType.BOMB, CombinationType.STRAIGHT_BOMB)
+                and player_idx != self.state.current_player_idx
+            ):
+                raise InvalidPlayError(
+                    "Only the current player can play this combination."
+                )
+            self.state.current_player_idx = player_idx
             if self.state.current_wish is not None:
                 if self.state.current_wish in [card.value for card in cards]:
                     logging.info(
-                        f"{self.current_player.name} has fulfilled the wish for card value {self.state.current_wish}."
+                        f"{player.name} has fulfilled the wish for card value {self.state.current_wish}."
                     )
                     self.state.current_wish = None
                 elif self.state.current_wish in [
-                    card.value for card in self.current_player.state.hand
+                    card.value for card in player.state.hand
                 ]:
                     if Combination.can_fulfill_wish(
                         self.state.current_combination,
                         self.state.current_wish,
-                        self.current_player.state.hand,
+                        player.state.hand,
                     ):
                         msg = f"The played combination does not fulfill the wish for card value {self.state.current_wish}."
                         raise InvalidPlayError(msg)
 
-            for player in self.players:
-                player.state.has_passed = False
+            for reset_player in self.players:
+                reset_player.state.has_passed = False
             self.state.current_combination = next_combination
-            self.state.winning_player_idx = self.state.current_player_idx
+            self.state.winning_player_idx = player_idx
             for card in cards:
-                self.current_player.play_card(card)
-            if len(self.current_player.state.hand) == 0:
+                player.play_card(card)
+            if len(player.state.hand) == 0:
                 logging.info(
-                    f"{self.current_player.name} has played all their cards and finished the round!"
+                    f"{player.name} has played all their cards and finished the round!"
                 )
-                self.state.player_rankings.append(self.state.current_player_idx)
+                self.state.player_rankings.append(player_idx)
             self.state.card_stack.extend(list(cards))
 
             self.add_play_log_entry(card_play)
@@ -234,11 +246,9 @@ class Tichu:
                 match self.state.current_combination.value:
                     case DOG.value:
                         logging.info(
-                            f"{self.current_player.name} played the Dog and passes the turn to their teammate."
+                            f"{player.name} played the Dog and passes the turn to their teammate."
                         )
-                        self.state.current_player_idx = (
-                            self.state.current_player_idx + 2
-                        ) % NUM_PLAYERS
+                        self.state.current_player_idx = (player_idx + 2) % NUM_PLAYERS
                         return
                     case PHOENIX.value:
                         self.state.current_combination.value = (
@@ -272,7 +282,7 @@ class Tichu:
                             raise InvalidPlayError(msg)
                         self.state.current_wish = play_argument
                         logging.info(
-                            f"{self.current_player.name} wishes for card value {self.state.current_wish}."
+                            f"{player.name} wishes for card value {self.state.current_wish}."
                         )
 
         next_player_idx = self.state.current_player_idx
@@ -339,7 +349,7 @@ if __name__ == "__main__":
         print()
         play = game.current_player.get_card_play()
         try:
-            game.next_turn(play)
+            game.next_turn(game.state.current_player_idx, play)
         except InvalidPlayError as e:
             logging.info(f"Invalid play: {e}")
             continue
