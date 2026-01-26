@@ -11,6 +11,14 @@
             "module": "tichu.tichu",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/src"
+        },
+        {
+            "name": "Python Debugger: Probabilities",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "tichu.probabilities",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/src"
         }
     ]
 }

@@ -1,6 +1,5 @@
 import logging
 import random
-from typing import IO, Literal
 
 from tichu import (
     GRAND_TICHU_HAND_SIZE,
