@@ -95,7 +95,7 @@ if __name__ == "__main__":
         random.shuffle(deck)
         for i, card in enumerate(deck):
             player = players[i % NUM_PLAYERS]
-            player.add_card(card)
+            player.state.hand.append(card)
         if all(
             not all(card in players[player_num].state.hand for card in not_play)
             for not_play in not_plays

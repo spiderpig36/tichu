@@ -60,7 +60,7 @@ class Tichu:
         self.random.shuffle(deck)
         for i, card in enumerate(deck):
             player = self.players[i % NUM_PLAYERS]
-            player.add_card(card)
+            player.state.hand.append(card)
             if (
                 len(player.state.hand) == GRAND_TICHU_HAND_SIZE
                 and player.get_grand_tichu_play() == "grand_tichu"
@@ -73,7 +73,7 @@ class Tichu:
         self.push_cards()
 
         self.state.current_player_idx = next(
-            i for i, p in enumerate(self.players) if p.has_mahjong()
+            i for i, p in enumerate(self.players) if MAH_JONG in p.state.hand
         )
         self.state.winning_player_idx = self.state.current_player_idx
         self.state.current_combination = None
@@ -106,13 +106,13 @@ class Tichu:
                 if card_idx in card_indices
             ]
             for card in cards_to_push:
-                player.play_card(card)
+                player.state.hand.remove(card)
             cards_for_players[(player_idx - 1) % NUM_PLAYERS].append(cards_to_push[0])
             cards_for_players[(player_idx + 2) % NUM_PLAYERS].append(cards_to_push[1])
             cards_for_players[(player_idx + 1) % NUM_PLAYERS].append(cards_to_push[2])
         for player_idx, player in enumerate(self.players):
             for card in cards_for_players[player_idx]:
-                player.add_card(card)
+                player.state.hand.append(card)
             player.state.hand.sort(key=lambda c: c.value)
 
     def add_play_log_entry(self, play: CardPlay):
@@ -227,7 +227,7 @@ class Tichu:
             self.state.current_combination = next_combination
             self.state.winning_player_idx = player_idx
             for card in cards:
-                player.play_card(card)
+                player.state.hand.remove(card)
             if len(player.state.hand) == 0:
                 logging.info(
                     f"{player.name} has played all their cards and finished the round!"
