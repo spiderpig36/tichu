@@ -3,6 +3,7 @@ from tichu import card
 from typing_extensions import Literal
 from tichu.card import Card
 from tichu.combination import Combination
+from tichu.player_state import PlayerState
 
 type CardPlay = tuple[set[Card], int | None] | Literal["pass", "tichu"]
 
@@ -19,6 +20,13 @@ class TichuState:
     card_stack: list[Card] = field(default_factory=list)
     player_rankings: list[int] = field(default_factory=list)
     play_log: list[tuple[int, CardPlay]] = field(default_factory=list)
+    player_states: list[PlayerState] = field(default_factory=list)
+
+    def get_player_state(self, player_idx: int | None) -> PlayerState:
+        """Retrieve a player's state by index."""
+        if player_idx is None:
+            raise ValueError("Player index cannot be None.")
+        return self.player_states[player_idx]
 
     def __str__(self):
         card_stack = ", ".join(str(card) for card in self.card_stack)

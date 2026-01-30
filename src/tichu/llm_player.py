@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from tichu import HAND_SIZE, NUM_PLAYERS
 from tichu.card import NORMAL_CARD_VALUES
 from tichu.player import Player
-from tichu.tichu_state import CardPlay
+from tichu.tichu_state import CardPlay, TichuState
 
 
 class InvalidLLMResponse(Exception):
@@ -30,7 +30,8 @@ class LLMPlayer(Player):
             raise ValueError("OPENAI_API_KEY not found in environment variables.")
         self.client = OpenAI(api_key=api_key)
 
-    def get_card_play(self) -> CardPlay:
+    def get_card_play(self, game_state: TichuState) -> CardPlay:
+        player_state = game_state.get_player_state(self.player_idx)
         # Load rules from file
         rules_path = os.path.join(os.path.dirname(__file__), "..", "..", "rules.md")
         with open(rules_path, "r", encoding="utf-8") as f:
@@ -41,10 +42,9 @@ Game Rules:
 {rules}
 
 Your Name: {self.name}
+Your Hand: {', '.join(str(card) for card in player_state.hand)}
 
-{self}
-
-{self.game_state}
+{game_state}
 
 Instructions: Decide what to play based on the rules and state. Respond with exactly one of:
 - 'pass' to pass your turn
@@ -69,15 +69,15 @@ Ensure the play is valid according to the rules.
             return "pass"
         elif play == "tichu":
             return "tichu"
-        if play and all(0 <= idx < len(self.state.hand) for idx in play):
+        if play and all(0 <= idx < len(player_state.hand) for idx in play):
             argument = response.output_parsed.argument
-            return {self.state.hand[idx] for idx in play}, argument
+            return {player_state.hand[idx] for idx in play}, argument
         raise InvalidLLMResponse(f"Invalid card indices: {play}")
 
-    def get_grand_tichu_play(self):
+    def get_grand_tichu_play(self, game_state: TichuState):
         # TODO: Implement LLM grand tichu play
         return "pass"
 
-    def get_push_play(self) -> set[int]:
+    def get_push_play(self, game_state: TichuState) -> set[int]:
         # TODO: Implement LLM push play
         return set(random.sample(range(HAND_SIZE), NUM_PLAYERS - 1))

@@ -14,6 +14,7 @@ from tichu.combination import Combination, CombinationType
 from tichu.human_player import HumanPlayer
 from tichu.llm_player import LLMPlayer
 from tichu.player import Player
+from tichu.player_state import PlayerState
 from tichu.random_player import RandomPlayer
 from tichu.tichu_state import CardPlay, TichuState
 
@@ -37,17 +38,18 @@ class Tichu:
 
     def new_game(self, players: list[Player]):
         self.state = TichuState()
+        self.state.player_states = [PlayerState() for _ in range(len(players))]
         if len(players) != NUM_PLAYERS:
             raise ValueError("Number of players must match NUM_PLAYERS")
         self.players = players
         for idx, player in enumerate(self.players):
-            player.set_game(self.state, idx)
+            player.set_game(idx)
 
     def start_new_round(self):
         self.state.play_log.clear()
         self.state.current_round += 1
-        for player in self.players:
-            player.reset_for_new_round()
+        for idx, player in enumerate(self.players):
+            player.reset_for_new_round(self.state)
         deck = []
         for color in Color:
             if color == Color.SPECIAL:
@@ -59,21 +61,25 @@ class Tichu:
 
         self.random.shuffle(deck)
         for i, card in enumerate(deck):
-            player = self.players[i % NUM_PLAYERS]
-            player.state.hand.append(card)
+            player_idx = i % NUM_PLAYERS
+            player_state = self.state.get_player_state(player_idx)
+            player_state.hand.append(card)
             if (
-                len(player.state.hand) == GRAND_TICHU_HAND_SIZE
-                and player.get_grand_tichu_play() == "grand_tichu"
+                len(player_state.hand) == GRAND_TICHU_HAND_SIZE
+                and self.players[player_idx].get_grand_tichu_play(self.state)
+                == "grand_tichu"
             ):
-                player.state.grand_tichu_called = True
+                player_state.grand_tichu_called = True
 
-        for player in self.players:
-            player.state.hand.sort(key=lambda c: c.value)
+        for player_state in self.state.player_states:
+            player_state.hand.sort(key=lambda c: c.value)
 
         self.push_cards()
 
         self.state.current_player_idx = next(
-            i for i, p in enumerate(self.players) if MAH_JONG in p.state.hand
+            i
+            for i, player_state in enumerate(self.state.player_states)
+            if MAH_JONG in player_state.hand
         )
         self.state.winning_player_idx = self.state.current_player_idx
         self.state.current_combination = None
@@ -99,28 +105,31 @@ class Tichu:
     def push_cards(self):
         cards_for_players = [[], [], [], []]
         for player_idx, player in enumerate(self.players):
-            card_indices = player.get_push_play()
+            player_state = self.state.get_player_state(player_idx)
+            card_indices = player.get_push_play(self.state)
             cards_to_push = [
                 card
-                for card_idx, card in enumerate(player.state.hand)
+                for card_idx, card in enumerate(player_state.hand)
                 if card_idx in card_indices
             ]
             for card in cards_to_push:
-                player.state.hand.remove(card)
+                player_state.hand.remove(card)
             cards_for_players[(player_idx - 1) % NUM_PLAYERS].append(cards_to_push[0])
             cards_for_players[(player_idx + 2) % NUM_PLAYERS].append(cards_to_push[1])
             cards_for_players[(player_idx + 1) % NUM_PLAYERS].append(cards_to_push[2])
-        for player_idx, player in enumerate(self.players):
+        for player_idx in range(NUM_PLAYERS):
+            player_state = self.state.get_player_state(player_idx)
             for card in cards_for_players[player_idx]:
-                player.state.hand.append(card)
-            player.state.hand.sort(key=lambda c: c.value)
+                player_state.hand.append(card)
+            player_state.hand.sort(key=lambda c: c.value)
 
     def add_play_log_entry(self, play: CardPlay):
         self.state.play_log.append((self.state.current_player_idx, play))
 
     def next_turn(self, player_idx: int, card_play: CardPlay):
         player = self.players[player_idx]
-        current_hand = player.state.hand
+        player_state = self.state.get_player_state(player_idx)
+        current_hand = player_state.hand
         if card_play == "pass":
             if player_idx != self.state.current_player_idx:
                 raise InvalidPlayError("Only the current player can pass.")
@@ -133,18 +142,18 @@ class Tichu:
                 raise InvalidPlayError(msg)
             logging.info(f"{player.name} has passed.")
             self.add_play_log_entry(card_play)
-            player.state.has_passed = True
+            player_state.has_passed = True
             if all(
-                player.state.has_passed
-                for idx, player in enumerate(self.players)
-                if player != self.winning_player
+                self.state.get_player_state(idx).has_passed
+                for idx in range(NUM_PLAYERS)
+                if idx != self.state.winning_player_idx
                 and idx not in self.state.player_rankings
             ):
                 logging.info(
                     "All other players have passed. Resetting current combination."
                 )
-                for player in self.players:
-                    player.state.has_passed = False
+                for ps in self.state.player_states:
+                    ps.has_passed = False
                 if (
                     self.state.current_combination
                     and self.state.current_combination.combination_type
@@ -158,24 +167,26 @@ class Tichu:
                         msg = "Dragon stack recipient id is not set."
                         raise RuntimeError(msg)
 
-                    self.players[
+                    self.state.get_player_state(
                         self.state.dragon_stack_recipient_id
-                    ].state.card_stack.extend(self.state.card_stack)
+                    ).card_stack.extend(self.state.card_stack)
                 else:
-                    self.winning_player.state.card_stack.extend(self.state.card_stack)
+                    self.state.get_player_state(
+                        self.winning_player.player_idx
+                    ).card_stack.extend(self.state.card_stack)
                 self.state.current_combination = None
                 self.state.card_stack.clear()
         elif card_play == "tichu":
-            if player.state.grand_tichu_called:
+            if player_state.grand_tichu_called:
                 msg = "Grand Tichu was already called."
                 raise InvalidPlayError(msg)
-            if len(player.state.hand) != HAND_SIZE:
+            if len(player_state.hand) != HAND_SIZE:
                 msg = (
                     "Tichu can only be called at the start of a turn with a full hand."
                 )
                 raise InvalidPlayError(msg)
             logging.info(f"{player.name} has called Tichu!")
-            player.state.tichu_called = True
+            player_state.tichu_called = True
             self.add_play_log_entry(card_play)
             return
         else:
@@ -212,23 +223,23 @@ class Tichu:
                     )
                     self.state.current_wish = None
                 elif self.state.current_wish in [
-                    card.value for card in player.state.hand
+                    card.value for card in self.state.get_player_state(player_idx).hand
                 ]:
                     if Combination.can_fulfill_wish(
                         self.state.current_combination,
                         self.state.current_wish,
-                        player.state.hand,
+                        self.state.get_player_state(player_idx).hand,
                     ):
                         msg = f"The played combination does not fulfill the wish for card value {self.state.current_wish}."
                         raise InvalidPlayError(msg)
 
-            for reset_player in self.players:
-                reset_player.state.has_passed = False
+            for reset_player_idx in range(NUM_PLAYERS):
+                self.state.get_player_state(reset_player_idx).has_passed = False
             self.state.current_combination = next_combination
             self.state.winning_player_idx = player_idx
             for card in cards:
-                player.state.hand.remove(card)
-            if len(player.state.hand) == 0:
+                player_state.hand.remove(card)
+            if len(player_state.hand) == 0:
                 logging.info(
                     f"{player.name} has played all their cards and finished the round!"
                 )
@@ -294,18 +305,18 @@ class Tichu:
 
     def end_round_scoring(self):
         team_scores = [0, 0]
-        for i, player in enumerate(self.players):
-            if player.state.tichu_called or player.state.grand_tichu_called:
+        for i, player_state in enumerate(self.state.player_states):
+            if player_state.tichu_called or player_state.grand_tichu_called:
                 if self.state.player_rankings[0] == i:
                     team_scores[i % 2] += (
                         GRAND_TICHU_SCORE
-                        if player.state.grand_tichu_called
+                        if player_state.grand_tichu_called
                         else TICHU_SCORE
                     )
                 else:
                     team_scores[i % 2] -= (
                         GRAND_TICHU_SCORE
-                        if player.state.grand_tichu_called
+                        if player_state.grand_tichu_called
                         else TICHU_SCORE
                     )
         if (
@@ -317,15 +328,15 @@ class Tichu:
             loosing_player = next(
                 i for i in range(NUM_PLAYERS) if i not in self.state.player_rankings
             )
-            self.players[self.state.player_rankings[0]].state.card_stack.extend(
-                self.players[loosing_player].state.card_stack
-            )
+            self.state.get_player_state(
+                self.state.player_rankings[0]
+            ).card_stack.extend(self.state.get_player_state(loosing_player).card_stack)
             team_scores[(loosing_player + 1) % 2] += Card.count_card_scores(
-                self.players[loosing_player].state.hand
+                self.state.get_player_state(loosing_player).hand
             )
-            for i, player in enumerate(self.players):
+            for i, player_state in enumerate(self.state.player_states):
                 team_id = i % 2
-                team_scores[team_id] += Card.count_card_scores(player.state.card_stack)
+                team_scores[team_id] += Card.count_card_scores(player_state.card_stack)
         for i in range(len(team_scores)):
             self.state.scores[i] += team_scores[i]
             logging.info(
@@ -346,7 +357,7 @@ if __name__ == "__main__":
         print(game.state)
         print(game.current_player)
         print()
-        play = game.current_player.get_card_play()
+        play = game.current_player.get_card_play(game.state)
         try:
             game.next_turn(game.state.current_player_idx, play)
         except InvalidPlayError as e:

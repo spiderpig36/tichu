@@ -20,33 +20,34 @@ class Player(abc.ABC):
         self.player_idx: int | None = None
         self.player_type = PlayerType.HUMAN
 
-    def set_game(self, game_state: TichuState, player_idx: int):
-        self.game_state = game_state
+    def set_game(self, player_idx: int):
         self.player_idx = player_idx
-        self.state = PlayerState()
 
     def _get_input(self, prompt: str) -> str:
         return input(prompt).lower()
 
     @abc.abstractmethod
-    def get_card_play(self) -> CardPlay:
+    def get_card_play(self, game_state: TichuState) -> CardPlay:
         pass
 
     @abc.abstractmethod
-    def get_grand_tichu_play(self) -> Literal["pass", "grand_tichu"]:
+    def get_grand_tichu_play(
+        self, game_state: TichuState
+    ) -> Literal["pass", "grand_tichu"]:
         pass
 
     @abc.abstractmethod
-    def get_push_play(self) -> set[int]:
+    def get_push_play(self, game_state: TichuState) -> set[int]:
         pass
 
-    def reset_for_new_round(self):
+    def reset_for_new_round(self, game_state: TichuState):
         """Reset the player's state for a new round."""
-        self.state.hand.clear()
-        self.state.card_stack.clear()
-        self.state.has_passed = False
-        self.state.tichu_called = False
-        self.state.grand_tichu_called = False
+        player_state = game_state.get_player_state(self.player_idx)
+        player_state.hand.clear()
+        player_state.card_stack.clear()
+        player_state.has_passed = False
+        player_state.tichu_called = False
+        player_state.grand_tichu_called = False
 
     def get_opponents(self):
         if self.player_idx % 2 == 0:
@@ -58,7 +59,4 @@ class Player(abc.ABC):
         return f"Player(name={self.name})"
 
     def __str__(self):
-        hand = "\n  ".join(
-            [""] + [f"{i}: {card}" for i, card in enumerate(self.state.hand)]
-        )
-        return f"Player {self.name} with index {self.player_idx} and hand: {hand}"
+        return f"Player {self.name} with index {self.player_idx}"
