@@ -2,8 +2,6 @@ import abc
 from enum import Enum
 from typing import Literal
 
-from tichu.card import Color
-from tichu.player_state import PlayerState
 from tichu.tichu_state import CardPlay, TichuState
 
 
@@ -52,11 +50,7 @@ class Player(abc.ABC):
     def get_opponents(self):
         if self.player_idx % 2 == 0:
             return [1, 3]
-        else:
-            return [0, 2]
+        return [0, 2]
 
     def __repr__(self):
         return f"Player(name={self.name})"
-
-    def __str__(self):
-        return f"Player {self.name} with index {self.player_idx}"

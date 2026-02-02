@@ -3,7 +3,7 @@ from enum import Enum
 from functools import reduce
 from itertools import combinations
 
-from tichu.card import Card, Color, DOG, MAH_JONG, PHOENIX, DRAGON
+from tichu.card import DOG, DRAGON, MAH_JONG, PHOENIX, Card, Color
 
 
 class CombinationType(Enum):
@@ -38,7 +38,7 @@ FULL_HOUSE_LENGTH_2 = 2
 
 class Combination:
     def __init__(
-        self, combination_type: CombinationType, value: int | float, length: int = 1
+        self, combination_type: CombinationType, value: float, length: int = 1
     ):
         self.combination_type = combination_type
         self.value = value
@@ -335,7 +335,7 @@ class Combination:
             combination is None
             or combination.combination_type == CombinationType.SINGLE
         ):
-            for value in card_buckets.keys():
+            for value in card_buckets:
                 if value >= min_value:
                     possible_combinations.extend(
                         [{card} for card in card_buckets[value]]
@@ -348,7 +348,7 @@ class Combination:
                 possible_combinations.append({DOG})
 
         if combination is None or combination.combination_type == CombinationType.PAIR:
-            for value in card_buckets.keys():
+            for value in card_buckets:
                 if value >= min_value:
                     if len(card_buckets[value]) >= 2:
                         possible_combinations.extend(
@@ -368,7 +368,7 @@ class Combination:
             combination is None
             or combination.combination_type == CombinationType.TRIPLE
         ):
-            for value in card_buckets.keys():
+            for value in card_buckets:
                 if value >= min_value:
                     if len(card_buckets[value]) >= 3:
                         possible_combinations.extend(
@@ -388,7 +388,7 @@ class Combination:
             combination is None
             or combination.combination_type is not CombinationType.STRAIGHT_BOMB
         ):
-            for value in card_buckets.keys():
+            for value in card_buckets:
                 if value >= min_value:
                     if len(card_buckets[value]) >= 4:
                         possible_combinations.extend(

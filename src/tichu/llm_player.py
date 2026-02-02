@@ -7,7 +7,6 @@ from openai import OpenAI
 from pydantic import BaseModel
 
 from tichu import HAND_SIZE, NUM_PLAYERS
-from tichu.card import NORMAL_CARD_VALUES
 from tichu.player import Player
 from tichu.tichu_state import CardPlay, TichuState
 
@@ -34,17 +33,15 @@ class LLMPlayer(Player):
         player_state = game_state.get_player_state(self.player_idx)
         # Load rules from file
         rules_path = os.path.join(os.path.dirname(__file__), "..", "..", "rules.md")
-        with open(rules_path, "r", encoding="utf-8") as f:
+        with open(rules_path, encoding="utf-8") as f:
             rules = f.read()
 
         prompt = f"""
 Game Rules:
 {rules}
 
-Your Name: {self.name}
-Your Hand: {', '.join(str(card) for card in player_state.hand)}
-
 {game_state}
+{player_state}
 
 Instructions: Decide what to play based on the rules and state. Respond with exactly one of:
 - 'pass' to pass your turn
@@ -67,7 +64,7 @@ Ensure the play is valid according to the rules.
         play = response.output_parsed.play
         if play == "pass":
             return "pass"
-        elif play == "tichu":
+        if play == "tichu":
             return "tichu"
         if play and all(0 <= idx < len(player_state.hand) for idx in play):
             argument = response.output_parsed.argument

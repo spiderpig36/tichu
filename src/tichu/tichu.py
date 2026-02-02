@@ -9,10 +9,9 @@ from tichu import (
     NUM_PLAYERS,
     TICHU_SCORE,
 )
-from tichu.card import NORMAL_CARD_VALUES, Card, Color, DOG, MAH_JONG, PHOENIX, DRAGON
+from tichu.card import DOG, DRAGON, MAH_JONG, NORMAL_CARD_VALUES, PHOENIX, Card, Color
 from tichu.combination import Combination, CombinationType
 from tichu.human_player import HumanPlayer
-from tichu.llm_player import LLMPlayer
 from tichu.player import Player
 from tichu.player_state import PlayerState
 from tichu.random_player import RandomPlayer
@@ -277,7 +276,7 @@ class Tichu:
                         ):
                             msg = f"Dragon stack recipient id must be between 0 and {NUM_PLAYERS - 1}."
                             raise InvalidPlayError(msg)
-                        elif (
+                        if (
                             self.state.dragon_stack_recipient_id % 2
                             == self.state.winning_player_idx % 2
                         ):
@@ -355,8 +354,8 @@ if __name__ == "__main__":
     game.start_new_round()
     while not game.end_of_round:
         print(game.state)
-        print(game.current_player)
-        print()
+        print(game.state.get_player_state(game.state.current_player_idx))
+        print("----------------------")
         play = game.current_player.get_card_play(game.state)
         try:
             game.next_turn(game.state.current_player_idx, play)

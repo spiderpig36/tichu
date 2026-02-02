@@ -1,12 +1,14 @@
-from functools import reduce
 import math
 import random
+from functools import reduce
+
+from tqdm import tqdm
+
 from tichu import NUM_PLAYERS
+from tichu.card import DOG, DRAGON, MAH_JONG, NORMAL_CARD_VALUES, PHOENIX, Card, Color
 from tichu.player import Player
 from tichu.random_player import RandomPlayer
 from tichu.tichu import Tichu
-from tqdm import tqdm
-from tichu.card import DOG, DRAGON, MAH_JONG, NORMAL_CARD_VALUES, PHOENIX, Card, Color
 
 
 def get_probability_for_combination(
@@ -16,8 +18,7 @@ def get_probability_for_combination(
         return math.comb(
             len(remaining_cards) - len(play), hand_size - len(play)
         ) / math.comb(len(remaining_cards), hand_size)
-    else:
-        return 0
+    return 0
 
 
 def get_probability_for_combination_excluding_others(
@@ -86,7 +87,7 @@ if __name__ == "__main__":
     trials = 1000000
     excluding_trails = 0
     tichu = Tichu()
-    for i in tqdm(range(0, trials)):
+    for i in tqdm(range(trials)):
         players: list[Player] = [
             RandomPlayer(f"Player {i}") for i in range(NUM_PLAYERS)
         ]
@@ -95,15 +96,15 @@ if __name__ == "__main__":
         random.shuffle(deck)
         for i, card in enumerate(deck):
             player = players[i % NUM_PLAYERS]
-            player.state.hand.append(card)
+            tichu.state.get_player_state(i).hand.append(card)
         if all(
-            not all(card in players[player_num].state.hand for card in not_play)
+            not all(card in tichu.state.get_player_state(i).hand for card in not_play)
             for not_play in not_plays
         ):
             excluding_trails += 1
-            if all(card in players[player_num].state.hand for card in play):
+            if all(card in tichu.state.get_player_state(i).hand for card in play):
                 count_excluding += 1
-        if all(card in players[player_num].state.hand for card in play):
+        if all(card in tichu.state.get_player_state(i).hand for card in play):
             count += 1
     emp_prob = count / trials
     emp_prob_excluding = count_excluding / excluding_trails

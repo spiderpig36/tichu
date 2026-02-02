@@ -1,7 +1,7 @@
 import random
 
 from tichu import HAND_SIZE, NUM_PLAYERS
-from tichu.card import NORMAL_CARD_VALUES, Card, Color, DOG, MAH_JONG, PHOENIX, DRAGON
+from tichu.card import DRAGON, MAH_JONG, NORMAL_CARD_VALUES
 from tichu.combination import Combination
 from tichu.player import Player
 from tichu.tichu_state import CardPlay, TichuState

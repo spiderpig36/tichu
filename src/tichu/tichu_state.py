@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
-from tichu import card
-from typing_extensions import Literal
+from typing import Literal
+
 from tichu.card import Card
 from tichu.combination import Combination
 from tichu.player_state import PlayerState

@@ -1,7 +1,7 @@
 import logging
 
 from tichu import HAND_SIZE, NUM_PLAYERS
-from tichu.card import NORMAL_CARD_VALUES, DOG, MAH_JONG, PHOENIX, DRAGON
+from tichu.card import DRAGON, MAH_JONG, NORMAL_CARD_VALUES
 from tichu.player import Player
 from tichu.tichu_state import TichuState
 
@@ -14,7 +14,7 @@ class HumanPlayer(Player):
         try:
             return int(recipient)
         except ValueError:
-            logging.error(
+            logging.exception(
                 "Invalid input. Please enter a valid player index. Try again."
             )
             return self.get_dragon_stack_recipient()
@@ -30,7 +30,7 @@ class HumanPlayer(Player):
             )
             return self.get_mahjong_wish()
         except ValueError:
-            logging.error(
+            logging.exception(
                 "Invalid input. Please enter a numeric card value. Try again."
             )
             return self.get_mahjong_wish()
@@ -54,7 +54,7 @@ class HumanPlayer(Player):
                 argument = self.get_mahjong_wish()
             return (cards, argument)
         except ValueError:
-            logging.error(
+            logging.exception(
                 "Invalid input. Please enter valid card indices separated by commas. Try again."
             )
             return self.get_card_play(game_state)
@@ -82,7 +82,7 @@ class HumanPlayer(Player):
                 return self.get_push_play(game_state)
             return set(card_indices)
         except ValueError:
-            logging.error(
+            logging.exception(
                 "Invalid input. Please enter valid card indices separated by commas. Try again."
             )
             return self.get_push_play(game_state)

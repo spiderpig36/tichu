@@ -44,13 +44,13 @@ class Card:
     def __str__(self):
         match self.value:
             case 0:
-                return f"Dog"
+                return "Dog"
             case 1:
-                return f"Mah Jong"
+                return "Mah Jong"
             case 50:
-                return f"Phoenix"
+                return "Phoenix"
             case 100:
-                return f"Dragon"
+                return "Dragon"
             case 11:
                 return f"{self.color.name} Jack"
             case 12:

@@ -1,6 +1,6 @@
 import pytest
 
-from tichu.card import Card, Color, DOG, MAH_JONG, PHOENIX, DRAGON
+from tichu.card import DOG, DRAGON, MAH_JONG, PHOENIX, Card, Color
 from tichu.combination import Combination, CombinationType
 
 
