@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tichu.card import DOG, DRAGON, MAH_JONG, PHOENIX, Card, Color
+from tichu.card import DOG, DRAGON, MAH_JONG, NORMAL_CARD_VALUES, PHOENIX, Card, Color
 from tichu.combination import Combination, CombinationType
 from tichu.player import Player
 from tichu.random_player import RandomPlayer
@@ -870,9 +870,6 @@ class TestPushCards:
 
         original_hand_size = len(game.state.get_player_state(0).hand)
 
-        with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
-            game.push_cards()
-
         for player_idx in range(NUM_PLAYERS):
             assert (
                 len(game.state.get_player_state(player_idx).hand) == original_hand_size
@@ -884,9 +881,6 @@ class TestPushCards:
         original_hands = [
             game.state.get_player_state(i).hand.copy() for i in range(NUM_PLAYERS)
         ]
-
-        with patch("tichu.player.Player.get_push_play", return_value={0, 1, 2}):
-            game.push_cards()
 
         all_cards_before = []
         for hand in original_hands:
@@ -905,30 +899,34 @@ class TestPushCards:
         card_1 = game.state.get_player_state(0).hand[1]
         card_2 = game.state.get_player_state(0).hand[2]
 
-        with patch("tichu.random_player.RandomPlayer.get_push_play") as mock_get_push:
-            mock_get_push.side_effect = [
-                {0, 1, 2},
-                {10, 11, 12},
-                {10, 11, 12},
-                {10, 11, 12},
-            ]
-            game.push_cards()
+        with (
+            patch(
+                "tichu.random_player.RandomPlayer.get_push_play",
+                side_effect=[{0, 1, 2}, {10, 11, 12}, {10, 11, 12}, {10, 11, 12}],
+            ),
+        ):
+            for player_idx, player in enumerate(game.players):
+                card_indices = player.get_push_play(game.state)
+                game.push_cards(player_idx, card_indices)
 
         player_1_received = card_2 in game.state.get_player_state(1).hand
         player_2_received = card_1 in game.state.get_player_state(2).hand
         player_3_received = card_0 in game.state.get_player_state(3).hand
 
-        assert mock_get_push.call_count == 4
         assert player_1_received
         assert player_2_received
         assert player_3_received
 
     def test_sequential_push_from_all_players(self, game: Tichu):
-        """Test that get_push is called sequentially for each player."""
+        """Test that push_cards only executes exchange when all players have selected."""
+        result_1 = game.push_cards(0, {0, 1, 2})
+        assert result_1 is False
 
-        with patch("tichu.random_player.RandomPlayer.get_push_play") as mock_get_push:
-            mock_get_push.side_effect = [{0, 1, 2}, {0, 1, 2}, {0, 1, 2}, {0, 1, 2}]
-            game.push_cards()
-            call_sequence = list(mock_get_push.call_args_list)
+        result_2 = game.push_cards(1, {0, 1, 2})
+        assert result_2 is False
 
-        assert len(call_sequence) == 4
+        result_3 = game.push_cards(2, {0, 1, 2})
+        assert result_3 is False
+
+        result_4 = game.push_cards(3, {0, 1, 2})
+        assert result_4 is True

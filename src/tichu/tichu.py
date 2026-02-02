@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import random
 
@@ -44,6 +45,48 @@ class Tichu:
         for idx, player in enumerate(self.players):
             player.set_game(idx)
 
+    def push_cards(self, player_idx: int, card_indices: set[int]) -> bool:
+        player_state = self.state.get_player_state(player_idx)
+        player_state.push_selection = card_indices
+
+        if all(
+            len(self.state.get_player_state(i).push_selection) > 0
+            for i in range(NUM_PLAYERS)
+        ):
+            self._execute_push_exchange()
+            return True
+        return False
+
+    def _execute_push_exchange(self):
+        cards_for_players = [[], [], [], []]
+        for player_idx in range(NUM_PLAYERS):
+            player_state = self.state.get_player_state(player_idx)
+            card_indices = player_state.push_selection
+            cards_to_push = [
+                card
+                for card_idx, card in enumerate(player_state.hand)
+                if card_idx in card_indices
+            ]
+            for card in cards_to_push:
+                player_state.hand.remove(card)
+            cards_for_players[(player_idx - 1) % NUM_PLAYERS].append(cards_to_push[0])
+            cards_for_players[(player_idx + 2) % NUM_PLAYERS].append(cards_to_push[1])
+            cards_for_players[(player_idx + 1) % NUM_PLAYERS].append(cards_to_push[2])
+
+        for player_idx in range(NUM_PLAYERS):
+            player_state = self.state.get_player_state(player_idx)
+            for card in cards_for_players[player_idx]:
+                player_state.hand.append(card)
+            player_state.hand.sort(key=lambda c: c.value)
+            player_state.push_selection.clear()
+
+        self.state.current_player_idx = next(
+            i
+            for i, player_state in enumerate(self.state.player_states)
+            if MAH_JONG in player_state.hand
+        )
+        self.state.winning_player_idx = self.state.current_player_idx
+
     def start_new_round(self):
         self.state.play_log.clear()
         self.state.current_round += 1
@@ -73,14 +116,6 @@ class Tichu:
         for player_state in self.state.player_states:
             player_state.hand.sort(key=lambda c: c.value)
 
-        self.push_cards()
-
-        self.state.current_player_idx = next(
-            i
-            for i, player_state in enumerate(self.state.player_states)
-            if MAH_JONG in player_state.hand
-        )
-        self.state.winning_player_idx = self.state.current_player_idx
         self.state.current_combination = None
         self.state.current_wish = None
         self.state.card_stack.clear()
@@ -100,27 +135,6 @@ class Tichu:
             len(self.state.player_rankings) == NUM_PLAYERS / 2
             and self.state.player_rankings[0] % 2 == self.state.player_rankings[1] % 2
         )
-
-    def push_cards(self):
-        cards_for_players = [[], [], [], []]
-        for player_idx, player in enumerate(self.players):
-            player_state = self.state.get_player_state(player_idx)
-            card_indices = player.get_push_play(self.state)
-            cards_to_push = [
-                card
-                for card_idx, card in enumerate(player_state.hand)
-                if card_idx in card_indices
-            ]
-            for card in cards_to_push:
-                player_state.hand.remove(card)
-            cards_for_players[(player_idx - 1) % NUM_PLAYERS].append(cards_to_push[0])
-            cards_for_players[(player_idx + 2) % NUM_PLAYERS].append(cards_to_push[1])
-            cards_for_players[(player_idx + 1) % NUM_PLAYERS].append(cards_to_push[2])
-        for player_idx in range(NUM_PLAYERS):
-            player_state = self.state.get_player_state(player_idx)
-            for card in cards_for_players[player_idx]:
-                player_state.hand.append(card)
-            player_state.hand.sort(key=lambda c: c.value)
 
     def add_play_log_entry(self, play: CardPlay):
         self.state.play_log.append((self.state.current_player_idx, play))
@@ -352,6 +366,11 @@ if __name__ == "__main__":
     game = Tichu()
     game.new_game(players)
     game.start_new_round()
+
+    for player_idx, player in enumerate(game.players):
+        card_indices = player.get_push_play(game.state)
+        game.push_cards(player_idx, card_indices)
+
     while not game.end_of_round:
         print(game.state)
         print(game.state.get_player_state(game.state.current_player_idx))

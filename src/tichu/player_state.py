@@ -10,6 +10,7 @@ class PlayerState:
     has_passed: bool = False
     tichu_called: bool = False
     grand_tichu_called: bool = False
+    push_selection: set[int] = field(default_factory=set)
 
     def __str__(self):
         hand_str = "\n".join(f"\t{i}: {card}" for i, card in enumerate(self.hand))
