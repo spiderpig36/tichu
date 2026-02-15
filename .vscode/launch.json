@@ -9,6 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "module": "tichu.tichu",
+            "python": "${workspaceFolder}/.venv/bin/python",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/src"
         },
@@ -17,6 +18,7 @@
             "type": "debugpy",
             "request": "launch",
             "module": "tichu.probabilities",
+            "python": "${workspaceFolder}/.venv/bin/python",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/src"
         }

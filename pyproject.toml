@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=69.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "tichu"
-dynamic = ["version"]
+version = "0.0.1"
 description = ''
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,22 +22,22 @@ classifiers = [
 ]
 dependencies = ["tqdm", "openai", "dotenv"]
 
+[dependency-groups]
+dev = ["pytest>=8.0.0", "mypy>=1.0.0", "ruff>=0.6.0"]
+
 [project.urls]
 Documentation = "https://github.com/Nic Dorner/tichu#readme"
 Issues = "https://github.com/Nic Dorner/tichu/issues"
 Source = "https://github.com/Nic Dorner/tichu"
 
-[tool.hatch.version]
-path = "src/tichu/__about__.py"
+[tool.setuptools]
+package-dir = { "" = "src" }
 
+[tool.setuptools.packages.find]
+where = ["src"]
 
-[tool.hatch.envs.test]
-dependencies = ["pytest"]
-
-[tool.hatch.envs.types]
-extra-dependencies = ["mypy>=1.0.0"]
-[tool.hatch.envs.types.scripts]
-check = "mypy --install-types --non-interactive {args:src/tichu tests}"
+[tool.setuptools.package-data]
+tichu = ["py.typed"]
 
 [tool.coverage.run]
 source_pkgs = ["tichu", "tests"]
