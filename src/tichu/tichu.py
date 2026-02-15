@@ -13,6 +13,7 @@ from tichu import (
 from tichu.card import DOG, DRAGON, MAH_JONG, NORMAL_CARD_VALUES, PHOENIX, Card, Color
 from tichu.combination import Combination, CombinationType
 from tichu.human_player import HumanPlayer
+from tichu.minimax_player import MiniMaxPlayer
 from tichu.player import Player
 from tichu.player_state import PlayerState
 from tichu.random_player import RandomPlayer
@@ -38,12 +39,18 @@ class Tichu:
 
     def new_game(self, players: list[Player]):
         self.state = TichuState()
-        self.state.player_states = [PlayerState() for _ in range(len(players))]
+        self.state.player_states = [PlayerState() for _ in range(NUM_PLAYERS)]
         if len(players) != NUM_PLAYERS:
             raise ValueError("Number of players must match NUM_PLAYERS")
         self.players = players
         for idx, player in enumerate(self.players):
             player.set_game(idx)
+
+    @classmethod
+    def from_state(cls, state: TichuState) -> "Tichu":
+        tichu = cls()
+        tichu.state = state
+        return tichu
 
     def push_cards(self, player_idx: int, card_indices: set[int]) -> bool:
         player_state = self.state.get_player_state(player_idx)
@@ -316,7 +323,7 @@ class Tichu:
             next_player_idx = (next_player_idx + 1) % NUM_PLAYERS
         self.state.current_player_idx = next_player_idx
 
-    def end_round_scoring(self):
+    def scoring(self) -> list[int]:
         team_scores = [0, 0]
         for i, player_state in enumerate(self.state.player_states):
             if player_state.tichu_called or player_state.grand_tichu_called:
@@ -350,6 +357,10 @@ class Tichu:
             for i, player_state in enumerate(self.state.player_states):
                 team_id = i % 2
                 team_scores[team_id] += Card.count_card_scores(player_state.card_stack)
+        return team_scores
+
+    def end_round_scoring(self):
+        team_scores = self.scoring()
         for i in range(len(team_scores)):
             self.state.scores[i] += team_scores[i]
             logging.info(
@@ -361,7 +372,8 @@ if __name__ == "__main__":
     players: list[Player] = [
         RandomPlayer(f"RANDOM {i}") for i in range(NUM_PLAYERS - 1)
     ]
-    players.append(HumanPlayer("HUMAN"))
+    players.append(MiniMaxPlayer("MINIMAX"))
+    # players.append(HumanPlayer("HUMAN"))
     # players.append(LLMPlayer("LLM"))
     game = Tichu()
     game.new_game(players)
