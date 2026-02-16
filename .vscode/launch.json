@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Tichu Module",
+            "name": "Python Debugger: Tichu CLI",
             "type": "debugpy",
             "request": "launch",
-            "module": "tichu.tichu",
+            "module": "tichu.cli",
             "python": "${workspaceFolder}/.venv/bin/python",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/src"

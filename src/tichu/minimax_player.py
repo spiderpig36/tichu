@@ -1,3 +1,4 @@
+import copy
 from enum import Enum
 import random
 from typing import Literal
@@ -35,7 +36,11 @@ class MiniMaxPlayer(Player):
         possible_card_plays: list[CardPlay] = []
         for card_set in possible_sets:
             if DRAGON in card_set:
-                for opponent in self.get_opponents():
+                if game.state.current_player_idx % 2 == 0:
+                    opponents = [1, 3]
+                else:
+                    opponents = [0, 2]
+                for opponent in opponents:
                     possible_card_plays.append((card_set, opponent))
             elif MAH_JONG in card_set:
                 for value in NORMAL_CARD_VALUES:
@@ -43,15 +48,20 @@ class MiniMaxPlayer(Player):
             else:
                 possible_card_plays.append((card_set, None))
 
-        possible_card_plays.append("pass")
+        if not game_state.current_wish or not Combination.can_fulfill_wish(
+            game_state.current_combination, game_state.current_wish, player_state.hand
+        ):
+            possible_card_plays.append("pass")
         if (
-            len(game.state.get_player_state(game_state.current_player_idx).hand)
-            == HAND_SIZE
+            len(player_state.hand) == HAND_SIZE
+            and player_state.tichu_called == False
+            and player_state.grand_tichu_called == False
         ):
             possible_card_plays.append("tichu")
 
         returned_values: list[tuple[float, CardPlay]] = []
         for play in possible_card_plays:
+            game.state = copy.deepcopy(game_state)
             game.next_turn(game_state.current_player_idx, play)
             if depth == 1 or game.end_of_round:
                 if self.player_idx == None:
@@ -61,11 +71,10 @@ class MiniMaxPlayer(Player):
                 score, _ = self.mini_max(
                     MiniMax.MIN if type == MiniMax.MAX else MiniMax.MAX,
                     game,
-                    game_state_stack + [game.state],
+                    game_state_stack + [copy.deepcopy(game.state)],
                     depth - 1,
                 )
             returned_values.append((score, play))
-            game.state = game_state_stack[-1]
 
         sorted_plays = sorted(
             returned_values, key=lambda x: x[0], reverse=(type == MiniMax.MAX)

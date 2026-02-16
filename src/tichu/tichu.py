@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import random
 
@@ -12,11 +11,8 @@ from tichu import (
 )
 from tichu.card import DOG, DRAGON, MAH_JONG, NORMAL_CARD_VALUES, PHOENIX, Card, Color
 from tichu.combination import Combination, CombinationType
-from tichu.human_player import HumanPlayer
-from tichu.minimax_player import MiniMaxPlayer
 from tichu.player import Player
 from tichu.player_state import PlayerState
-from tichu.random_player import RandomPlayer
 from tichu.tichu_state import CardPlay, TichuState
 
 
@@ -133,10 +129,6 @@ class Tichu:
         return self.players[self.state.current_player_idx]
 
     @property
-    def winning_player(self) -> Player:
-        return self.players[self.state.winning_player_idx]
-
-    @property
     def end_of_round(self) -> bool:
         return len(self.state.player_rankings) == NUM_PLAYERS - 1 or (
             len(self.state.player_rankings) == NUM_PLAYERS / 2
@@ -147,7 +139,6 @@ class Tichu:
         self.state.play_log.append((self.state.current_player_idx, play))
 
     def next_turn(self, player_idx: int, card_play: CardPlay):
-        player = self.players[player_idx]
         player_state = self.state.get_player_state(player_idx)
         current_hand = player_state.hand
         if card_play == "pass":
@@ -160,7 +151,7 @@ class Tichu:
             ):
                 msg = f"You can fulfill the wish for card value {self.state.current_wish} and cannot pass."
                 raise InvalidPlayError(msg)
-            logging.info(f"{player.name} has passed.")
+            logging.info(f"Current player has passed.")
             self.add_play_log_entry(card_play)
             player_state.has_passed = True
             if all(
@@ -181,7 +172,7 @@ class Tichu:
                     and self.state.current_combination.value == DRAGON.value
                 ):
                     logging.info(
-                        f"{self.winning_player.name} wins the single card round and collects the card stack."
+                        f"Winning player wins the single card round and collects the card stack."
                     )
                     if self.state.dragon_stack_recipient_id is None:
                         msg = "Dragon stack recipient id is not set."
@@ -192,7 +183,7 @@ class Tichu:
                     ).card_stack.extend(self.state.card_stack)
                 else:
                     self.state.get_player_state(
-                        self.winning_player.player_idx
+                        self.state.winning_player_idx
                     ).card_stack.extend(self.state.card_stack)
                 self.state.current_combination = None
                 self.state.card_stack.clear()
@@ -205,7 +196,7 @@ class Tichu:
                     "Tichu can only be called at the start of a turn with a full hand."
                 )
                 raise InvalidPlayError(msg)
-            logging.info(f"{player.name} has called Tichu!")
+            logging.info(f"Current player has called Tichu!")
             player_state.tichu_called = True
             self.add_play_log_entry(card_play)
             return
@@ -239,7 +230,7 @@ class Tichu:
             if self.state.current_wish is not None:
                 if self.state.current_wish in [card.value for card in cards]:
                     logging.info(
-                        f"{player.name} has fulfilled the wish for card value {self.state.current_wish}."
+                        f"Current player has fulfilled the wish for card value {self.state.current_wish}."
                     )
                     self.state.current_wish = None
                 elif self.state.current_wish in [
@@ -261,7 +252,7 @@ class Tichu:
                 player_state.hand.remove(card)
             if len(player_state.hand) == 0:
                 logging.info(
-                    f"{player.name} has played all their cards and finished the round!"
+                    f"Current player has played all their cards and finished the round!"
                 )
                 self.state.player_rankings.append(player_idx)
             self.state.card_stack.extend(list(cards))
@@ -276,7 +267,7 @@ class Tichu:
                 match self.state.current_combination.value:
                     case DOG.value:
                         logging.info(
-                            f"{player.name} played the Dog and passes the turn to their teammate."
+                            f"Current player played the Dog and passes the turn to their teammate."
                         )
                         self.state.current_player_idx = (player_idx + 2) % NUM_PLAYERS
                         return
@@ -312,7 +303,7 @@ class Tichu:
                             raise InvalidPlayError(msg)
                         self.state.current_wish = play_argument
                         logging.info(
-                            f"{player.name} wishes for card value {self.state.current_wish}."
+                            f"Current player wishes for card value {self.state.current_wish}."
                         )
 
         next_player_idx = self.state.current_player_idx
@@ -325,35 +316,39 @@ class Tichu:
 
     def scoring(self) -> list[int]:
         team_scores = [0, 0]
-        for i, player_state in enumerate(self.state.player_states):
-            if player_state.tichu_called or player_state.grand_tichu_called:
-                if self.state.player_rankings[0] == i:
-                    team_scores[i % 2] += (
-                        GRAND_TICHU_SCORE
-                        if player_state.grand_tichu_called
-                        else TICHU_SCORE
-                    )
-                else:
-                    team_scores[i % 2] -= (
-                        GRAND_TICHU_SCORE
-                        if player_state.grand_tichu_called
-                        else TICHU_SCORE
-                    )
+        if len(self.state.player_rankings) > 0:
+            for i, player_state in enumerate(self.state.player_states):
+                if player_state.tichu_called or player_state.grand_tichu_called:
+                    if self.state.player_rankings[0] == i:
+                        team_scores[i % 2] += (
+                            GRAND_TICHU_SCORE
+                            if player_state.grand_tichu_called
+                            else TICHU_SCORE
+                        )
+                    else:
+                        team_scores[i % 2] -= (
+                            GRAND_TICHU_SCORE
+                            if player_state.grand_tichu_called
+                            else TICHU_SCORE
+                        )
         if (
             len(self.state.player_rankings) == NUM_PLAYERS / 2
             and self.state.player_rankings[0] % 2 == self.state.player_rankings[1] % 2
         ):
             team_scores[self.state.player_rankings[0] % 2] += MATCH_SCORE
         else:
-            loosing_player = next(
-                i for i in range(NUM_PLAYERS) if i not in self.state.player_rankings
-            )
-            self.state.get_player_state(
-                self.state.player_rankings[0]
-            ).card_stack.extend(self.state.get_player_state(loosing_player).card_stack)
-            team_scores[(loosing_player + 1) % 2] += Card.count_card_scores(
-                self.state.get_player_state(loosing_player).hand
-            )
+            if self.end_of_round:
+                loosing_player = next(
+                    i for i in range(NUM_PLAYERS) if i not in self.state.player_rankings
+                )
+                team_scores[
+                    self.state.player_rankings[0] % 2
+                ] += Card.count_card_scores(
+                    self.state.get_player_state(loosing_player).card_stack
+                )
+                team_scores[(loosing_player + 1) % 2] += Card.count_card_scores(
+                    self.state.get_player_state(loosing_player).hand
+                )
             for i, player_state in enumerate(self.state.player_states):
                 team_id = i % 2
                 team_scores[team_id] += Card.count_card_scores(player_state.card_stack)
@@ -366,30 +361,3 @@ class Tichu:
             logging.info(
                 f"Team {i} scored {team_scores[i]} points this round. Total score: {self.state.scores[i]}"
             )
-
-
-if __name__ == "__main__":
-    players: list[Player] = [
-        RandomPlayer(f"RANDOM {i}") for i in range(NUM_PLAYERS - 1)
-    ]
-    players.append(MiniMaxPlayer("MINIMAX"))
-    # players.append(HumanPlayer("HUMAN"))
-    # players.append(LLMPlayer("LLM"))
-    game = Tichu()
-    game.new_game(players)
-    game.start_new_round()
-
-    for player_idx, player in enumerate(game.players):
-        card_indices = player.get_push_play(game.state)
-        game.push_cards(player_idx, card_indices)
-
-    while not game.end_of_round:
-        print(game.state)
-        print(game.state.get_player_state(game.state.current_player_idx))
-        print("----------------------")
-        play = game.current_player.get_card_play(game.state)
-        try:
-            game.next_turn(game.state.current_player_idx, play)
-        except InvalidPlayError as e:
-            logging.info(f"Invalid play: {e}")
-            continue
