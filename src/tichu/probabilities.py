@@ -1,7 +1,8 @@
 import math
+import random
 from functools import reduce
 from itertools import combinations
-import random
+from typing import Literal
 
 from tqdm import tqdm
 
@@ -14,7 +15,7 @@ from tichu.tichu import Tichu
 
 def get_probability_for_combination(
     remaining_cards: set[Card], hand_size: int, play: set[Card]
-):
+) -> float | Literal[0]:
     if all([card in remaining_cards for card in play]) and len(play) <= hand_size:
         return math.comb(
             len(remaining_cards) - len(play), hand_size - len(play)
@@ -24,7 +25,7 @@ def get_probability_for_combination(
 
 def get_combined_probability_for_combinations(
     remaining_cards: set[Card], hand_size: int, plays: list[set[Card]]
-):
+) -> float:
     total_probability = 0.0
     for i in range(1, min(len(plays) + 1, hand_size + 1)):
         for play_combination in combinations(plays, i):
@@ -41,21 +42,21 @@ def get_probability_for_combination_excluding_others(
     hand_size: int,
     play: set[Card],
     impossible_plays: list[set[Card]],
-):
+) -> float:
     probability_impossible_plays = 1.0 - get_combined_probability_for_combinations(
         remaining_cards, hand_size, impossible_plays
     )
-    combinations_play = math.comb(
-        len(remaining_cards) - len(play), hand_size - len(play)
+    combinations_play = get_probability_for_combination(
+        remaining_cards, hand_size, play
     )
-    for impossible_play in impossible_plays:
-        combinations_play -= math.comb(
-            len(remaining_cards) - len(play) - len(impossible_play - play),
-            hand_size - len(play) - len(impossible_play - play),
-        )
-    return (
-        combinations_play / math.comb(len(remaining_cards), hand_size)
-    ) / probability_impossible_plays
+    and_impossible_plays = [
+        impossible_play.union(play) for impossible_play in impossible_plays
+    ]
+    combinations_play -= get_combined_probability_for_combinations(
+        remaining_cards, hand_size, and_impossible_plays
+    )
+
+    return (combinations_play) / probability_impossible_plays
 
 
 if __name__ == "__main__":
@@ -72,10 +73,19 @@ if __name__ == "__main__":
             Card(Color.SWORDS, 5),
         },
         {
-            Card(Color.STAR, 10),
+            Card(Color.SWORDS, 3),
         },
         {
-            Card(Color.JADE, 3),
+            Card(Color.SWORDS, 4),
+        },
+        {
+            Card(Color.SWORDS, 6),
+        },
+        {
+            Card(Color.SWORDS, 7),
+        },
+        {
+            Card(Color.SWORDS, 8),
         },
     ]
     # not_plays = [

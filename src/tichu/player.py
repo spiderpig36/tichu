@@ -48,6 +48,9 @@ class Player(abc.ABC):
         player_state.grand_tichu_called = False
 
     def get_opponents(self):
+        if self.player_idx is None:
+            msg = "Can not get opponent if player index is not set."
+            raise ValueError(msg)
         if self.player_idx % 2 == 0:
             return [1, 3]
         return [0, 2]
