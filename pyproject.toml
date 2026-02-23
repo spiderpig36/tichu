@@ -30,6 +30,7 @@ dev = [
     "pytest>=8.0.0",
     "mypy>=1.0.0",
     "ruff>=0.6.0",
+    "types-tqdm>=4.67.3.20260205",
 ]
 
 [project.urls]
