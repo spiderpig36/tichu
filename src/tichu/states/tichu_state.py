@@ -3,7 +3,7 @@ from typing import Literal
 
 from tichu.card import Card
 from tichu.combination import Combination
-from tichu.player_state import PlayerState
+from tichu.states.player_state import PlayerState
 
 type CardPlay = tuple[set[Card], int | None] | Literal["pass", "tichu"]
 

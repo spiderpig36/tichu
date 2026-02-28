@@ -2,7 +2,7 @@ import abc
 from enum import Enum
 from typing import Literal
 
-from tichu.tichu_state import CardPlay, TichuState
+from tichu.states.tichu_state import CardPlay, TichuState
 
 
 class PlayerType(Enum):

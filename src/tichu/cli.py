@@ -2,9 +2,9 @@ from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Static
 
 from tichu import NUM_PLAYERS
-from tichu.minimax_player import MiniMaxPlayer
-from tichu.player import Player
-from tichu.random_player import RandomPlayer
+from tichu.players.minimax_player import MiniMaxPlayer
+from tichu.players.player import Player
+from tichu.players.random_player import RandomPlayer
 from tichu.tichu import InvalidPlayError, Tichu
 
 

@@ -4,8 +4,8 @@ import pytest
 
 from tichu.card import DOG, DRAGON, MAH_JONG, NORMAL_CARD_VALUES, PHOENIX, Card, Color
 from tichu.combination import Combination, CombinationType
-from tichu.player import Player
-from tichu.random_player import RandomPlayer
+from tichu.players.player import Player
+from tichu.players.random_player import RandomPlayer
 from tichu.tichu import (
     GRAND_TICHU_SCORE,
     HAND_SIZE,
@@ -24,9 +24,9 @@ def game() -> Tichu:
     game_instance.new_game(players)
     with (
         patch(
-            "tichu.random_player.RandomPlayer.get_grand_tichu_play", return_value="pass"
+            "tichu.players.random_player.RandomPlayer.get_grand_tichu_play", return_value="pass"
         ),
-        patch("tichu.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}),
+        patch("tichu.players.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}),
     ):
         game_instance.start_new_round()
     return game_instance
@@ -41,11 +41,11 @@ class TestStartNewRound:
         game.new_game(players)
         with (
             patch(
-                "tichu.random_player.RandomPlayer.get_grand_tichu_play",
+                "tichu.players.random_player.RandomPlayer.get_grand_tichu_play",
                 side_effect=["grand_tichu", "pass", "pass", "pass"],
             ),
             patch(
-                "tichu.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
+                "tichu.players.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
             ),
         ):
             game.start_new_round()
@@ -86,7 +86,7 @@ class TestNextTurnPass:
         game.state.current_combination.value = 5
 
         with patch(
-            "tichu.random_player.RandomPlayer.get_card_play", return_value="pass"
+            "tichu.players.random_player.RandomPlayer.get_card_play", return_value="pass"
         ):
             play = game.current_player.get_card_play(game.state)
             game.next_turn(1, play)
@@ -445,7 +445,7 @@ class TestNextTurnSpecialCards:
         game.state.get_player_state(0).hand = [Card(Color.JADE, 2), DRAGON]
 
         with patch(
-            "tichu.random_player.RandomPlayer.get_card_play",
+            "tichu.players.random_player.RandomPlayer.get_card_play",
             side_effect=[
                 ({game.state.get_player_state(0).hand[1]}, 1),
                 "pass",
@@ -468,7 +468,7 @@ class TestNextTurnSpecialCards:
         game.state.get_player_state(0).hand = [DRAGON]
 
         with patch(
-            "tichu.random_player.RandomPlayer.get_card_play",
+            "tichu.players.random_player.RandomPlayer.get_card_play",
             side_effect=[
                 ({game.state.get_player_state(0).hand[0]}, 2),
                 "pass",
@@ -487,7 +487,7 @@ class TestNextTurnSpecialCards:
         game.state.get_player_state(0).hand = [DRAGON]
 
         with patch(
-            "tichu.random_player.RandomPlayer.get_card_play",
+            "tichu.players.random_player.RandomPlayer.get_card_play",
             side_effect=[
                 ({game.state.get_player_state(0).hand[0]}, None),
                 "pass",
@@ -603,11 +603,11 @@ class TestNextTurnEdgeCases:
         game1.new_game(players)
         with (
             patch(
-                "tichu.random_player.RandomPlayer.get_grand_tichu_play",
+                "tichu.players.random_player.RandomPlayer.get_grand_tichu_play",
                 return_value="pass",
             ),
             patch(
-                "tichu.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
+                "tichu.players.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
             ),
         ):
             game1.start_new_round()
@@ -621,11 +621,11 @@ class TestNextTurnEdgeCases:
         game2.new_game(players)
         with (
             patch(
-                "tichu.random_player.RandomPlayer.get_grand_tichu_play",
+                "tichu.players.random_player.RandomPlayer.get_grand_tichu_play",
                 return_value="pass",
             ),
             patch(
-                "tichu.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
+                "tichu.players.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
             ),
         ):
             game2.start_new_round()
@@ -823,11 +823,11 @@ class TestEndRoundScoring:
 
         with (
             patch(
-                "tichu.random_player.RandomPlayer.get_grand_tichu_play",
+                "tichu.players.random_player.RandomPlayer.get_grand_tichu_play",
                 return_value="pass",
             ),
             patch(
-                "tichu.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
+                "tichu.players.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
             ),
         ):
             game.start_new_round()
@@ -901,7 +901,7 @@ class TestPushCards:
 
         with (
             patch(
-                "tichu.random_player.RandomPlayer.get_push_play",
+                "tichu.players.random_player.RandomPlayer.get_push_play",
                 side_effect=[{0, 1, 2}, {10, 11, 12}, {10, 11, 12}, {10, 11, 12}],
             ),
         ):

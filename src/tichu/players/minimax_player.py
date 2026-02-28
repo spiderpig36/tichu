@@ -1,15 +1,14 @@
 import copy
 from enum import Enum
 import random
-from typing import Literal
 
 from tichu import HAND_SIZE, NUM_PLAYERS
-from tichu.card import DRAGON, MAH_JONG, NORMAL_CARD_VALUES, Card
+from tichu.card import DRAGON, MAH_JONG, NORMAL_CARD_VALUES
 from tichu.combination import Combination
-from tichu.player import Player
+from tichu.players.player import Player
 from tichu.probabilities import get_probability_for_combination_excluding_others
 from tichu.tichu import Tichu
-from tichu.tichu_state import CardPlay, TichuState
+from tichu.states.tichu_state import CardPlay, TichuState
 
 
 class MiniMax(Enum):

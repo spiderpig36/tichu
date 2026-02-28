@@ -2,8 +2,8 @@ import logging
 
 from tichu import HAND_SIZE, NUM_PLAYERS
 from tichu.card import DRAGON, MAH_JONG, NORMAL_CARD_VALUES
-from tichu.player import Player
-from tichu.tichu_state import TichuState
+from tichu.players.player import Player
+from tichu.states.tichu_state import TichuState
 
 
 class HumanPlayer(Player):

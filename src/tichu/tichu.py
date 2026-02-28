@@ -11,9 +11,9 @@ from tichu import (
 )
 from tichu.card import DOG, DRAGON, MAH_JONG, NORMAL_CARD_VALUES, PHOENIX, Card, Color
 from tichu.combination import Combination, CombinationType
-from tichu.player import Player
-from tichu.player_state import PlayerState
-from tichu.tichu_state import CardPlay, TichuState
+from tichu.players.player import Player
+from tichu.states.player_state import PlayerState
+from tichu.states.tichu_state import CardPlay, TichuState
 
 
 class TichuError(Exception):
@@ -151,7 +151,7 @@ class Tichu:
             ):
                 msg = f"You can fulfill the wish for card value {self.state.current_wish} and cannot pass."
                 raise InvalidPlayError(msg)
-            logging.info(f"Current player has passed.")
+            logging.info("Current player has passed.")
             self.add_play_log_entry(card_play)
             player_state.has_passed = True
             if all(
@@ -172,7 +172,7 @@ class Tichu:
                     and self.state.current_combination.value == DRAGON.value
                 ):
                     logging.info(
-                        f"Winning player wins the single card round and collects the card stack."
+                        "Winning player wins the single card round and collects the card stack."
                     )
                     if self.state.dragon_stack_recipient_id is None:
                         msg = "Dragon stack recipient id is not set."
@@ -196,7 +196,7 @@ class Tichu:
                     "Tichu can only be called at the start of a turn with a full hand."
                 )
                 raise InvalidPlayError(msg)
-            logging.info(f"Current player has called Tichu!")
+            logging.info("Current player has called Tichu!")
             player_state.tichu_called = True
             self.add_play_log_entry(card_play)
             return
@@ -252,7 +252,7 @@ class Tichu:
                 player_state.hand.remove(card)
             if len(player_state.hand) == 0:
                 logging.info(
-                    f"Current player has played all their cards and finished the round!"
+                    "Current player has played all their cards and finished the round!"
                 )
                 self.state.player_rankings.append(player_idx)
             self.state.card_stack.extend(list(cards))
@@ -267,7 +267,7 @@ class Tichu:
                 match self.state.current_combination.value:
                     case DOG.value:
                         logging.info(
-                            f"Current player played the Dog and passes the turn to their teammate."
+                            "Current player played the Dog and passes the turn to their teammate."
                         )
                         self.state.current_player_idx = (player_idx + 2) % NUM_PLAYERS
                         return
@@ -341,10 +341,10 @@ class Tichu:
                 loosing_player = next(
                     i for i in range(NUM_PLAYERS) if i not in self.state.player_rankings
                 )
-                team_scores[
-                    self.state.player_rankings[0] % 2
-                ] += Card.count_card_scores(
-                    self.state.get_player_state(loosing_player).card_stack
+                team_scores[self.state.player_rankings[0] % 2] += (
+                    Card.count_card_scores(
+                        self.state.get_player_state(loosing_player).card_stack
+                    )
                 )
                 team_scores[(loosing_player + 1) % 2] += Card.count_card_scores(
                     self.state.get_player_state(loosing_player).hand

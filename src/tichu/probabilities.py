@@ -8,8 +8,8 @@ from tqdm import tqdm
 
 from tichu import NUM_PLAYERS
 from tichu.card import DOG, DRAGON, MAH_JONG, NORMAL_CARD_VALUES, PHOENIX, Card, Color
-from tichu.player import Player
-from tichu.random_player import RandomPlayer
+from tichu.players.player import Player
+from tichu.players.random_player import RandomPlayer
 from tichu.tichu import Tichu
 
 

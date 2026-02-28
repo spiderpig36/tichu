@@ -7,8 +7,8 @@ from openai import OpenAI
 from pydantic import BaseModel
 
 from tichu import HAND_SIZE, NUM_PLAYERS
-from tichu.player import Player
-from tichu.tichu_state import CardPlay, TichuState
+from tichu.players.player import Player
+from tichu.states.tichu_state import CardPlay, TichuState
 
 
 class InvalidLLMResponse(Exception):
