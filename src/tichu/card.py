@@ -76,3 +76,23 @@ DOG = Card(Color.SPECIAL, 0)
 MAH_JONG = Card(Color.SPECIAL, 1)
 PHOENIX = Card(Color.SPECIAL, 50)
 DRAGON = Card(Color.SPECIAL, 100)
+
+
+def build_full_deck() -> list[Card]:
+    """Build a full Tichu deck containing all standard and special cards.
+
+    Parameters:
+        None.
+    Returns:
+        list[Card]: A list with 56 cards including all four special cards.
+    Exceptions raised:
+        None.
+    """
+    deck = [
+        Card(color, value)
+        for color in Color
+        if color != Color.SPECIAL
+        for value in NORMAL_CARD_VALUES
+    ]
+    deck.extend([DOG, MAH_JONG, PHOENIX, DRAGON])
+    return deck

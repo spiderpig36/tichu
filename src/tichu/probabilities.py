@@ -1,16 +1,9 @@
 import math
-import random
 from functools import reduce
 from itertools import combinations
 from typing import Literal
 
-from tqdm import tqdm
-
-from tichu import NUM_PLAYERS
-from tichu.card import DOG, DRAGON, MAH_JONG, NORMAL_CARD_VALUES, PHOENIX, Card, Color
-from tichu.players.player import Player
-from tichu.players.random_player import RandomPlayer
-from tichu.tichu import Tichu
+from tichu.card import Card
 
 
 def get_probability_for_combination(
@@ -57,95 +50,3 @@ def get_probability_for_combination_excluding_others(
     )
 
     return (combinations_play) / probability_impossible_plays
-
-
-if __name__ == "__main__":
-    count = 0
-    count_excluding = 0
-    play = {
-        Card(Color.JADE, 3),
-    }
-    not_plays = [
-        {
-            Card(Color.JADE, 3),
-        },
-    ]
-    # not_plays = [
-    #     {Card(color, i) for color in Color if color != Color.SPECIAL}
-    #     for i in NORMAL_CARD_VALUES
-    # ]
-    player_num = 0
-    deck = []
-    for color in Color:
-        if color == Color.SPECIAL:
-            continue
-        for value in NORMAL_CARD_VALUES:
-            card = Card(color, value)
-            deck.append(card)
-    deck.extend([DOG, MAH_JONG, PHOENIX, DRAGON])
-    trials = 100000
-    excluding_trails = 0
-    any_trails = 0
-    tichu = Tichu()
-    for i in tqdm(range(trials)):
-        players: list[Player] = [
-            RandomPlayer(f"Player {i}") for i in range(NUM_PLAYERS)
-        ]
-        tichu.new_game(players)
-
-        random.shuffle(deck)
-        for j, card in enumerate(deck):
-            tichu.state.get_player_state(j % NUM_PLAYERS).hand.append(card)
-        if any(
-            all(
-                card in tichu.state.get_player_state(player_num).hand
-                for card in not_play
-            )
-            for not_play in not_plays
-        ):
-            any_trails += 1
-        if all(
-            not all(
-                card in tichu.state.get_player_state(player_num).hand
-                for card in not_play
-            )
-            for not_play in not_plays
-        ):
-            excluding_trails += 1
-            if all(
-                card in tichu.state.get_player_state(player_num).hand for card in play
-            ):
-                count_excluding += 1
-        if all(card in tichu.state.get_player_state(player_num).hand for card in play):
-            count += 1
-    emp_prob = count / trials
-    emp_prob_excluding = count_excluding / excluding_trails
-    emp_prob_any = any_trails / trials
-    print("Measured probability ", emp_prob)
-    print(
-        "Calculated probability ",
-        get_probability_for_combination(
-            set(deck),
-            14,
-            play,
-        ),
-    )
-    print("Measured probability excluding others ", emp_prob_excluding)
-    print(
-        "Calculated probability excluding others ",
-        get_probability_for_combination_excluding_others(
-            set(deck),
-            14,
-            play,
-            not_plays,
-        ),
-    )
-    print("Measured probability of any not play ", emp_prob_any)
-    print(
-        "Calculated probability of any not play ",
-        get_combined_probability_for_combinations(
-            set(deck),
-            14,
-            not_plays,
-        ),
-    )

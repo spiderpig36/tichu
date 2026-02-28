@@ -9,7 +9,15 @@ from tichu import (
     NUM_PLAYERS,
     TICHU_SCORE,
 )
-from tichu.card import DOG, DRAGON, MAH_JONG, NORMAL_CARD_VALUES, PHOENIX, Card, Color
+from tichu.card import (
+    DOG,
+    DRAGON,
+    MAH_JONG,
+    NORMAL_CARD_VALUES,
+    PHOENIX,
+    Card,
+    build_full_deck,
+)
 from tichu.combination import Combination, CombinationType
 from tichu.players.player import Player
 from tichu.states.player_state import PlayerState
@@ -95,14 +103,7 @@ class Tichu:
         self.state.current_round += 1
         for idx, player in enumerate(self.players):
             player.reset_for_new_round(self.state)
-        deck = []
-        for color in Color:
-            if color == Color.SPECIAL:
-                continue
-            for value in NORMAL_CARD_VALUES:
-                card = Card(color, value)
-                deck.append(card)
-        deck.extend([DOG, MAH_JONG, PHOENIX, DRAGON])
+        deck = build_full_deck()
 
         self.random.shuffle(deck)
         for i, card in enumerate(deck):

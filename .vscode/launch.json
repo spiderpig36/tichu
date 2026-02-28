@@ -12,15 +12,6 @@
             "python": "${workspaceFolder}/.venv/bin/python",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/src"
-        },
-        {
-            "name": "Python Debugger: Probabilities",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "tichu.probabilities",
-            "python": "${workspaceFolder}/.venv/bin/python",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}/src"
         }
     ]
 }
