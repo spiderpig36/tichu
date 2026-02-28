@@ -54,8 +54,8 @@ class MiniMaxPlayer(Player):
             possible_card_plays.append("pass")
         if (
             len(player_state.hand) == HAND_SIZE
-            and player_state.tichu_called == False
-            and player_state.grand_tichu_called == False
+            and not player_state.tichu_called
+            and not player_state.grand_tichu_called
         ):
             possible_card_plays.append("tichu")
 
@@ -64,7 +64,7 @@ class MiniMaxPlayer(Player):
             game.state = copy.deepcopy(game_state)
             game.next_turn(game_state.current_player_idx, play)
             if depth == 1 or game.end_of_round:
-                if self.player_idx == None:
+                if self.player_idx is None:
                     raise ValueError("Player index not set for MiniMaxPlayer.")
                 score = float(game.scoring()[self.player_idx % 2])
             else:

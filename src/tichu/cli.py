@@ -47,6 +47,7 @@ class TichuCliApp(App[None]):
             game.push_cards(player_idx, card_indices)
         output_lines: list[str] = []
         while not game.end_of_round:
+            output_lines.append(f"{game.current_player.name}'s turn:")
             output_lines.append(str(game.state))
             output_lines.append(
                 str(game.state.get_player_state(game.state.current_player_idx))

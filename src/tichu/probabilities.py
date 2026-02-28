@@ -67,25 +67,7 @@ if __name__ == "__main__":
     }
     not_plays = [
         {
-            Card(Color.PAGODE, 2),
-        },
-        {
-            Card(Color.SWORDS, 5),
-        },
-        {
-            Card(Color.SWORDS, 3),
-        },
-        {
-            Card(Color.SWORDS, 4),
-        },
-        {
-            Card(Color.SWORDS, 6),
-        },
-        {
-            Card(Color.SWORDS, 7),
-        },
-        {
-            Card(Color.SWORDS, 8),
+            Card(Color.JADE, 3),
         },
     ]
     # not_plays = [
