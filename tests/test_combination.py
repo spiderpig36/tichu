@@ -187,7 +187,7 @@ from tichu.combination import Combination, CombinationType
                 Card(Color.JADE, 14),
                 Card(Color.SWORDS, 14),
                 PHOENIX,
-                Card(Color.JADE, 14),
+                Card(Color.STAR, 14),
                 Card(Color.SWORDS, 2),
             ],
             CombinationType.FULL_HOUSE,
@@ -272,14 +272,6 @@ def test_valid_combinations(cards, expected_type, expected_value, expected_lengt
         ],
         [
             Card(Color.SWORDS, 2),
-            Card(Color.SWORDS, 4),
-            Card(Color.STAR, 5),
-            Card(Color.PAGODE, 6),
-            Card(Color.JADE, 7),
-            Card(Color.JADE, 8),
-        ],
-        [
-            Card(Color.SWORDS, 4),
             Card(Color.SWORDS, 4),
             Card(Color.STAR, 5),
             Card(Color.PAGODE, 6),

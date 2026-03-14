@@ -73,10 +73,9 @@ class Tichu:
         for player_idx in range(NUM_PLAYERS):
             player_state = self.state.get_player_state(player_idx)
             card_indices = player_state.push_selection
+            sorted_hand = player_state.get_sorted_hand()
             cards_to_push = [
-                card
-                for card_idx, card in enumerate(player_state.hand)
-                if card_idx in card_indices
+                card for card_idx, card in enumerate(sorted_hand) if card_idx in card_indices
             ]
             for card in cards_to_push:
                 player_state.hand.remove(card)
@@ -87,8 +86,7 @@ class Tichu:
         for player_idx in range(NUM_PLAYERS):
             player_state = self.state.get_player_state(player_idx)
             for card in cards_for_players[player_idx]:
-                player_state.hand.append(card)
-            player_state.hand.sort(key=lambda c: c.value)
+                player_state.hand.add(card)
             player_state.push_selection.clear()
 
         self.state.current_player_idx = next(
@@ -109,16 +107,13 @@ class Tichu:
         for i, card in enumerate(deck):
             player_idx = i % NUM_PLAYERS
             player_state = self.state.get_player_state(player_idx)
-            player_state.hand.append(card)
+            player_state.hand.add(card)
             if (
                 len(player_state.hand) == GRAND_TICHU_HAND_SIZE
                 and self.players[player_idx].get_grand_tichu_play(self.state)
                 == "grand_tichu"
             ):
                 player_state.grand_tichu_called = True
-
-        for player_state in self.state.player_states:
-            player_state.hand.sort(key=lambda c: c.value)
 
         self.state.current_combination = None
         self.state.current_wish = None
@@ -181,11 +176,11 @@ class Tichu:
 
                     self.state.get_player_state(
                         self.state.dragon_stack_recipient_id
-                    ).card_stack.extend(self.state.card_stack)
+                    ).card_stack.update(self.state.card_stack)
                 else:
                     self.state.get_player_state(
                         self.state.winning_player_idx
-                    ).card_stack.extend(self.state.card_stack)
+                    ).card_stack.update(self.state.card_stack)
                 self.state.current_combination = None
                 self.state.card_stack.clear()
         elif card_play == "tichu":

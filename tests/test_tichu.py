@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tichu.card import DOG, DRAGON, MAH_JONG, NORMAL_CARD_VALUES, PHOENIX, Card, Color
+from tichu.card import DOG, DRAGON, MAH_JONG, PHOENIX, Card, Color
 from tichu.combination import Combination, CombinationType
 from tichu.players.player import Player
 from tichu.players.random_player import RandomPlayer
@@ -24,9 +24,13 @@ def game() -> Tichu:
     game_instance.new_game(players)
     with (
         patch(
-            "tichu.players.random_player.RandomPlayer.get_grand_tichu_play", return_value="pass"
+            "tichu.players.random_player.RandomPlayer.get_grand_tichu_play",
+            return_value="pass",
         ),
-        patch("tichu.players.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}),
+        patch(
+            "tichu.players.random_player.RandomPlayer.get_push_play",
+            return_value={0, 1, 2},
+        ),
     ):
         game_instance.start_new_round()
     return game_instance
@@ -45,7 +49,8 @@ class TestStartNewRound:
                 side_effect=["grand_tichu", "pass", "pass", "pass"],
             ),
             patch(
-                "tichu.players.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
+                "tichu.players.random_player.RandomPlayer.get_push_play",
+                return_value={0, 1, 2},
             ),
         ):
             game.start_new_round()
@@ -86,7 +91,8 @@ class TestNextTurnPass:
         game.state.current_combination.value = 5
 
         with patch(
-            "tichu.players.random_player.RandomPlayer.get_card_play", return_value="pass"
+            "tichu.players.random_player.RandomPlayer.get_card_play",
+            return_value="pass",
         ):
             play = game.current_player.get_card_play(game.state)
             game.next_turn(1, play)
@@ -151,7 +157,7 @@ class TestNextTurnPlayCard:
         with patch.object(
             player,
             "get_card_play",
-            return_value=({game.state.get_player_state(1).hand[0]}, None),
+            return_value=({game.state.get_player_state(1).get_sorted_hand()[0]}, None),
         ):
             play = player.get_card_play(game.state)
             with pytest.raises(InvalidPlayError):
@@ -170,7 +176,7 @@ class TestNextTurnPlayCard:
         with patch.object(
             player,
             "get_card_play",
-            return_value=({game.state.get_player_state(0).hand[0]}, None),
+            return_value=({game.state.get_player_state(0).get_sorted_hand()[0]}, None),
         ):
             play = player.get_card_play(game.state)
             game.next_turn(0, play)
@@ -268,7 +274,7 @@ class TestNextTurnPlayCard:
         with patch.object(
             game.current_player,
             "get_card_play",
-            return_value=({game.state.get_player_state(1).hand[0]}, None),
+            return_value=({game.state.get_player_state(1).get_sorted_hand()[0]}, None),
         ):
             play = game.current_player.get_card_play(game.state)
             with pytest.raises(InvalidPlayError):
@@ -284,12 +290,12 @@ class TestNextTurnPlayCard:
         game.state.current_combination.value = 14
         game.state.current_combination.length = 2
 
-        game.state.get_player_state(1).hand = [
+        game.state.get_player_state(1).hand = {
             Card(Color.JADE, 9),
             Card(Color.PAGODE, 9),
             Card(Color.SWORDS, 9),
             Card(Color.STAR, 9),
-        ]
+        }
         with patch.object(
             game.current_player,
             "get_card_play",
@@ -310,12 +316,12 @@ class TestNextTurnPlayCard:
         game.state.current_combination.value = 5
         game.state.current_combination.length = 1
 
-        bomb_cards = [
+        bomb_cards = {
             Card(Color.JADE, 9),
             Card(Color.PAGODE, 9),
             Card(Color.SWORDS, 9),
             Card(Color.STAR, 9),
-        ]
+        }
         game.state.get_player_state(1).hand = bomb_cards
 
         with patch.object(
@@ -339,7 +345,7 @@ class TestNextTurnPlayCard:
         game.state.current_combination.length = 1
 
         single_card = {Card(Color.JADE, 6)}
-        game.state.get_player_state(1).hand = list(single_card)
+        game.state.get_player_state(1).hand = set(single_card)
 
         with patch.object(
             game.players[1], "get_card_play", return_value=(single_card, None)
@@ -358,7 +364,7 @@ class TestNextTurnSpecialCards:
         """Test that playing dog passes turn to teammate."""
 
         game.state.current_player_idx = 0
-        game.state.get_player_state(0).hand = [DOG]
+        game.state.get_player_state(0).hand = {DOG}
         with patch.object(
             game.current_player,
             "get_card_play",
@@ -376,7 +382,7 @@ class TestNextTurnSpecialCards:
         game.state.current_player_idx = 0
         game.state.card_stack = [Card(Color.JADE, card_value)]
         game.state.current_combination = Combination(CombinationType.SINGLE, card_value)
-        game.state.get_player_state(0).hand = [PHOENIX]
+        game.state.get_player_state(0).hand = {PHOENIX}
 
         with patch.object(
             game.current_player,
@@ -394,7 +400,7 @@ class TestNextTurnSpecialCards:
         """Test that playing Mah Jong prompts for wish value."""
 
         game.state.current_player_idx = 0
-        game.state.get_player_state(0).hand = [MAH_JONG]
+        game.state.get_player_state(0).hand = {MAH_JONG}
 
         with (
             patch.object(
@@ -412,7 +418,7 @@ class TestNextTurnSpecialCards:
         """Test that playing Mah Jong with invalid wish raises error."""
 
         game.state.current_player_idx = 0
-        game.state.get_player_state(0).hand = [MAH_JONG]
+        game.state.get_player_state(0).hand = {MAH_JONG}
 
         with patch.object(
             game.current_player,
@@ -427,7 +433,7 @@ class TestNextTurnSpecialCards:
         """Test that playing Mah Jong without wish raises error."""
 
         game.state.current_player_idx = 0
-        game.state.get_player_state(0).hand = [MAH_JONG]
+        game.state.get_player_state(0).hand = {MAH_JONG}
 
         with patch.object(
             game.current_player,
@@ -442,12 +448,12 @@ class TestNextTurnSpecialCards:
         """Test that playing dragon and winning triggers stack recipient selection."""
 
         game.state.current_player_idx = 0
-        game.state.get_player_state(0).hand = [Card(Color.JADE, 2), DRAGON]
+        game.state.get_player_state(0).hand = {Card(Color.JADE, 2), DRAGON}
 
         with patch(
             "tichu.players.random_player.RandomPlayer.get_card_play",
             side_effect=[
-                ({game.state.get_player_state(0).hand[1]}, 1),
+                ({game.state.get_player_state(0).get_sorted_hand()[1]}, 1),
                 "pass",
                 "pass",
                 "pass",
@@ -459,18 +465,18 @@ class TestNextTurnSpecialCards:
 
         assert game.state.winning_player_idx == 0
         assert game.state.current_player_idx == 0
-        assert game.state.get_player_state(1).card_stack == [DRAGON]
+        assert game.state.get_player_state(1).card_stack == {DRAGON}
 
     def test_play_dragon_stack_selection_invalid_player(self, game: Tichu):
         """Test that playing dragon with invalid recipient raises error."""
 
         game.state.current_player_idx = 0
-        game.state.get_player_state(0).hand = [DRAGON]
+        game.state.get_player_state(0).hand = {DRAGON}
 
         with patch(
             "tichu.players.random_player.RandomPlayer.get_card_play",
             side_effect=[
-                ({game.state.get_player_state(0).hand[0]}, 2),
+                ({game.state.get_player_state(0).get_sorted_hand()[0]}, 2),
                 "pass",
                 "pass",
                 "pass",
@@ -484,12 +490,12 @@ class TestNextTurnSpecialCards:
         """Test that playing dragon without recipient raises error."""
 
         game.state.current_player_idx = 0
-        game.state.get_player_state(0).hand = [DRAGON]
+        game.state.get_player_state(0).hand = {DRAGON}
 
         with patch(
             "tichu.players.random_player.RandomPlayer.get_card_play",
             side_effect=[
-                ({game.state.get_player_state(0).hand[0]}, None),
+                ({game.state.get_player_state(0).get_sorted_hand()[0]}, None),
                 "pass",
                 "pass",
                 "pass",
@@ -509,7 +515,7 @@ class TestNextTurnWish:
         game.state.current_combination.length = 1
 
         game.state.current_player_idx = 1
-        game.state.get_player_state(1).hand = [Card(Color.PAGODE, 14)]
+        game.state.get_player_state(1).hand = {Card(Color.PAGODE, 14)}
 
         with (
             patch.object(
@@ -529,13 +535,13 @@ class TestNextTurnWish:
         game.state.current_combination.length = 1
 
         game.state.current_player_idx = 1
-        game.state.get_player_state(1).hand = [
+        game.state.get_player_state(1).hand = {
             Card(Color.PAGODE, 14),
             Card(Color.PAGODE, 2),
             Card(Color.SWORDS, 2),
             Card(Color.STAR, 2),
             Card(Color.JADE, 2),
-        ]
+        }
 
         with patch.object(
             game.current_player,
@@ -565,8 +571,6 @@ class TestNextTurnEdgeCases:
         """Test that invalid card index raises error."""
 
         game.state.current_player_idx = 0
-        hand_size = len(game.state.get_player_state(0).hand)
-
         with patch.object(
             game.current_player,
             "get_card_play",
@@ -585,7 +589,7 @@ class TestNextTurnEdgeCases:
             game.current_player,
             "get_card_play",
             return_value=(
-                {game.state.get_player_state(initial_player_id).hand[1]},
+                {game.state.get_player_state(initial_player_id).get_sorted_hand()[1]},
                 None,
             ),
         ):
@@ -607,12 +611,16 @@ class TestNextTurnEdgeCases:
                 return_value="pass",
             ),
             patch(
-                "tichu.players.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
+                "tichu.players.random_player.RandomPlayer.get_push_play",
+                return_value={0, 1, 2},
             ),
         ):
             game1.start_new_round()
         hands1 = [
-            [(card.color, card.value) for card in game1.state.get_player_state(i).hand]
+            [
+                (card.color, card.value)
+                for card in game1.state.get_player_state(i).get_sorted_hand()
+            ]
             for i in range(NUM_PLAYERS)
         ]
 
@@ -625,12 +633,16 @@ class TestNextTurnEdgeCases:
                 return_value="pass",
             ),
             patch(
-                "tichu.players.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
+                "tichu.players.random_player.RandomPlayer.get_push_play",
+                return_value={0, 1, 2},
             ),
         ):
             game2.start_new_round()
         hands2 = [
-            [(card.color, card.value) for card in game2.state.get_player_state(i).hand]
+            [
+                (card.color, card.value)
+                for card in game2.state.get_player_state(i).get_sorted_hand()
+            ]
             for i in range(NUM_PLAYERS)
         ]
 
@@ -649,7 +661,7 @@ class TestNextTurnGameFlow:
         with patch.object(
             game.current_player,
             "get_card_play",
-            return_value=({game.state.get_player_state(0).hand[1]}, None),
+            return_value=({game.state.get_player_state(0).get_sorted_hand()[1]}, None),
         ):
             play = game.current_player.get_card_play(game.state)
             game.next_turn(0, play)
@@ -665,7 +677,7 @@ class TestNextTurnGameFlow:
         with patch.object(
             game.current_player,
             "get_card_play",
-            return_value=({game.state.get_player_state(1).hand[1]}, None),
+            return_value=({game.state.get_player_state(1).get_sorted_hand()[1]}, None),
         ):
             play = game.current_player.get_card_play(game.state)
             game.next_turn(1, play)
@@ -681,7 +693,11 @@ class TestNextTurnGameFlow:
             game.current_player,
             "get_card_play",
             return_value=(
-                {game.state.get_player_state(game.state.current_player_idx).hand[1]},
+                {
+                    game.state.get_player_state(
+                        game.state.current_player_idx
+                    ).get_sorted_hand()[1]
+                },
                 None,
             ),
         ):
@@ -711,10 +727,10 @@ class TestEndRoundScoring:
 
         game.state.get_player_state(0).tichu_called = True
         game.state.player_rankings = [0, 1, 2]
-        game.state.get_player_state(3).hand = [
+        game.state.get_player_state(3).hand = {
             Card(Color.JADE, 3),
             Card(Color.SWORDS, 4),
-        ]
+        }
         initial_team_score = game.state.scores[0]
 
         game.end_round_scoring()
@@ -726,10 +742,10 @@ class TestEndRoundScoring:
 
         game.state.get_player_state(0).grand_tichu_called = True
         game.state.player_rankings = [0, 1, 2]
-        game.state.get_player_state(3).hand = [
+        game.state.get_player_state(3).hand = {
             Card(Color.JADE, 3),
             Card(Color.SWORDS, 4),
-        ]
+        }
         initial_team_score = game.state.scores[0]
 
         game.end_round_scoring()
@@ -762,15 +778,15 @@ class TestEndRoundScoring:
         """Test that losing player's hand cards are scored."""
 
         game.state.player_rankings = [0, 1, 2]
-        game.state.get_player_state(3).hand = [
+        game.state.get_player_state(3).hand = {
             Card(Color.JADE, 3),
             Card(Color.SWORDS, 4),
-        ]
-        game.state.get_player_state(3).card_stack = [
+        }
+        game.state.get_player_state(3).card_stack = {
             Card(Color.JADE, 5),
             Card(Color.SWORDS, 10),
             DRAGON,
-        ]
+        }
         stack_score = Card.count_card_scores(game.state.get_player_state(3).card_stack)
         initial_team_score = game.state.scores[0]
 
@@ -784,11 +800,11 @@ class TestEndRoundScoring:
         game.state.player_rankings = [0, 1, 2]
 
         test_cards = [Card(Color.PAGODE, 5), Card(Color.JADE, 10)]
-        game.state.get_player_state(0).card_stack.extend(test_cards)
-        game.state.get_player_state(3).hand = [
+        game.state.get_player_state(0).card_stack.update(test_cards)
+        game.state.get_player_state(3).hand = {
             Card(Color.JADE, 3),
             Card(Color.SWORDS, 4),
-        ]
+        }
 
         initial_team_score = game.state.scores[0]
         card_score = Card.count_card_scores(test_cards)
@@ -802,10 +818,10 @@ class TestEndRoundScoring:
         game.state.get_player_state(0).tichu_called = True
         game.state.get_player_state(1).tichu_called = True
         game.state.player_rankings = [0, 2, 3]
-        game.state.get_player_state(1).hand = [
+        game.state.get_player_state(1).hand = {
             Card(Color.JADE, 3),
             Card(Color.SWORDS, 4),
-        ]
+        }
 
         initial_team_0_score = game.state.scores[0]
         initial_team_1_score = game.state.scores[1]
@@ -827,7 +843,8 @@ class TestEndRoundScoring:
                 return_value="pass",
             ),
             patch(
-                "tichu.players.random_player.RandomPlayer.get_push_play", return_value={0, 1, 2}
+                "tichu.players.random_player.RandomPlayer.get_push_play",
+                return_value={0, 1, 2},
             ),
         ):
             game.start_new_round()
@@ -854,7 +871,7 @@ class TestEndRoundScoring:
 
         game.state.player_rankings = [0, 1, 2]
 
-        game.state.get_player_state(0).card_stack.append(DRAGON)
+        game.state.get_player_state(0).card_stack.add(DRAGON)
 
         initial_team_score = game.state.scores[0]
         game.end_round_scoring()
@@ -882,11 +899,11 @@ class TestPushCards:
             game.state.get_player_state(i).hand.copy() for i in range(NUM_PLAYERS)
         ]
 
-        all_cards_before = []
+        all_cards_before: list[Card] = []
         for hand in original_hands:
             all_cards_before.extend(hand)
 
-        all_cards_after = []
+        all_cards_after: list[Card] = []
         for player_idx in range(NUM_PLAYERS):
             all_cards_after.extend(game.state.get_player_state(player_idx).hand)
 
@@ -895,9 +912,9 @@ class TestPushCards:
     def test_push_rotation_player_0_to_3(self, game: Tichu):
         """Test push from player 0 goes to player 3 (left), player 2 (partner), player 1 (right)."""
 
-        card_0 = game.state.get_player_state(0).hand[0]
-        card_1 = game.state.get_player_state(0).hand[1]
-        card_2 = game.state.get_player_state(0).hand[2]
+        card_0 = game.state.get_player_state(0).get_sorted_hand()[0]
+        card_1 = game.state.get_player_state(0).get_sorted_hand()[1]
+        card_2 = game.state.get_player_state(0).get_sorted_hand()[2]
 
         with (
             patch(

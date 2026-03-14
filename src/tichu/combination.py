@@ -85,7 +85,7 @@ class Combination:
         ):
             return cls(CombinationType.BOMB, cards[0].value)
         has_phoenix = PHOENIX in cards
-        card_count = Combination.get_card_count(cards)
+        card_count = Combination.get_card_count(set(cards))
         straight_values = sorted(card_count.keys())
         if (
             len(cards) >= STAIR_SIZE * 2
@@ -159,12 +159,10 @@ class Combination:
             and self.value > other.value
         ) or self.combination_type.get_bomb_strength(
             self.length
-        ) > other.combination_type.get_bomb_strength(
-            other.length
-        )
+        ) > other.combination_type.get_bomb_strength(other.length)
 
     @staticmethod
-    def get_card_count(cards: list[Card]) -> dict[int, int]:
+    def get_card_count(cards: set[Card]) -> dict[int, int]:
         card_count: dict[int, int] = {}
         for card in cards:
             if card.color != Color.SPECIAL or card == MAH_JONG:
@@ -173,7 +171,7 @@ class Combination:
 
     @staticmethod
     def can_fulfill_wish(
-        combination: "Combination | None", wish_value: int, cards: list[Card]
+        combination: "Combination | None", wish_value: int, cards: set[Card]
     ) -> bool:
         card_count = Combination.get_card_count(cards)
         straight_values = sorted(card_count.keys())
@@ -317,7 +315,7 @@ class Combination:
     @staticmethod
     def possible_plays(
         combination: "Combination | None",
-        cards: list[Card],
+        cards: set[Card],
         wish_value: int | None = None,
     ) -> list[set[Card]]:
         min_value = round(combination.value + 1) if combination else 0
@@ -416,7 +414,6 @@ class Combination:
                     if len(window) == length or (
                         len(window) == length - 1 and has_phoenix
                     ):
-
                         straight_plays: list[set[Card]] = []
                         for val in range(window_start, window_end + 1):
                             new_plays = []

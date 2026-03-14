@@ -45,8 +45,9 @@ class HumanPlayer(Player):
         if play == "tichu":
             return "tichu"
         try:
+            sorted_hand = player_state.get_sorted_hand()
             card_indices = [int(idx.strip()) for idx in play.split(",")]
-            cards = set(player_state.hand[i] for i in card_indices)
+            cards = set(sorted_hand[i] for i in card_indices)
             argument = None
             if DRAGON in cards:
                 argument = self.get_dragon_stack_recipient()

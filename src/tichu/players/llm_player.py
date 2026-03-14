@@ -62,13 +62,14 @@ Ensure the play is valid according to the rules.
         if not response or not response.output_parsed:
             raise InvalidLLMResponse("No response from LLM")
         play = response.output_parsed.play
+        sorted_hand = player_state.get_sorted_hand()
         if play == "pass":
             return "pass"
         if play == "tichu":
             return "tichu"
-        if play and all(0 <= idx < len(player_state.hand) for idx in play):
+        if play and all(0 <= idx < len(sorted_hand) for idx in play):
             argument = response.output_parsed.argument
-            return {player_state.hand[idx] for idx in play}, argument
+            return {sorted_hand[idx] for idx in play}, argument
         raise InvalidLLMResponse(f"Invalid card indices: {play}")
 
     def get_grand_tichu_play(self, game_state: TichuState):

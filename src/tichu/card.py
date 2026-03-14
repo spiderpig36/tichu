@@ -1,5 +1,6 @@
 from enum import Enum
 from functools import reduce
+from typing import Iterable
 
 NORMAL_CARD_VALUES = range(2, 15)
 SPECIAL_CARD_VALUES = [0, 1, 50, 100]
@@ -38,7 +39,7 @@ class Card:
                 return 0
 
     @staticmethod
-    def count_card_scores(cards: list["Card"]) -> int:
+    def count_card_scores(cards: Iterable["Card"]) -> int:
         return reduce(lambda total, card: total + card.get_score(), cards, 0)
 
     def __str__(self):
