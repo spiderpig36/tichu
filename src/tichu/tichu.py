@@ -1,3 +1,4 @@
+import copy
 import logging
 import random
 
@@ -20,7 +21,7 @@ from tichu.card import (
 )
 from tichu.combination import Combination, CombinationType
 from tichu.players.player import Player
-from tichu.states.player_state import PlayerState
+from tichu.states.player_state import Hand, PlayerState
 from tichu.states.tichu_state import CardPlay, TichuState
 
 
@@ -51,9 +52,29 @@ class Tichu:
             player.set_game(idx)
 
     @classmethod
-    def from_state(cls, state: TichuState) -> "Tichu":
+    def from_state(
+        cls, state: TichuState, simulated_player_idx: int | None = None
+    ) -> "Tichu":
+        """Create a game instance from state, optionally expanding hidden hands for simulation.
+
+        Parameters:
+            state: The source game state.
+            simulated_player_idx: Player whose exact hand remains fixed during simulation.
+        Returns:
+            Tichu: A game initialized with copied state.
+        Exceptions raised:
+            None.
+        """
         tichu = cls()
-        tichu.state = state
+        tichu.state = copy.deepcopy(state)
+        if simulated_player_idx is not None:
+            opponent_cards: set[Card] = set()
+            for idx, player_state in enumerate(tichu.state.player_states):
+                if idx != simulated_player_idx:
+                    opponent_cards.update(player_state.hand)
+            for idx, player_state in enumerate(tichu.state.player_states):
+                if idx != simulated_player_idx:
+                    player_state.hand = Hand(opponent_cards, len(player_state.hand))
         return tichu
 
     def push_cards(self, player_idx: int, card_indices: set[int]) -> bool:

@@ -14,6 +14,7 @@ from tichu.tichu import (
     InvalidPlayError,
     Tichu,
 )
+from tichu.states.player_state import Hand
 
 
 @pytest.fixture
@@ -63,6 +64,52 @@ class TestStartNewRound:
     def test_cards_are_dealt(self, game: Tichu):
         for player_idx in range(NUM_PLAYERS):
             assert len(game.state.get_player_state(player_idx).hand) == HAND_SIZE
+
+
+class TestSimulationState:
+    """Tests for hand logical length and simulation state setup."""
+
+    def test_hand_tracks_logical_length_separately_from_candidates(self):
+        """Test that Hand length changes independently from visible candidate cards."""
+        card = Card(Color.JADE, 2)
+        extra_card = Card(Color.SWORDS, 3)
+        hand = Hand({card, extra_card}, length=1)
+
+        assert len(hand) == 1
+        assert card in hand
+        hand.remove(card)
+
+        assert len(hand) == 0
+        assert extra_card in hand
+
+    def test_from_state_expands_opponent_hands_but_preserves_lengths(
+        self, game: Tichu
+    ):
+        """Test that simulation state expands opponent candidates without changing lengths."""
+        simulated_player_idx = 0
+        original_opponent_lengths = [
+            len(game.state.get_player_state(idx).hand)
+            for idx in range(NUM_PLAYERS)
+            if idx != simulated_player_idx
+        ]
+        opponent_cards = set()
+        for idx in range(NUM_PLAYERS):
+            if idx != simulated_player_idx:
+                opponent_cards.update(game.state.get_player_state(idx).hand)
+
+        simulated_game = Tichu.from_state(
+            game.state, simulated_player_idx=simulated_player_idx
+        )
+
+        for length_idx, player_idx in enumerate(
+            idx for idx in range(NUM_PLAYERS) if idx != simulated_player_idx
+        ):
+            player_state = simulated_game.state.get_player_state(player_idx)
+            assert len(player_state.hand) == original_opponent_lengths[length_idx]
+            assert set(player_state.hand) == opponent_cards
+        assert simulated_game.state.get_player_state(simulated_player_idx).hand == (
+            game.state.get_player_state(simulated_player_idx).hand
+        )
 
 
 class TestNextTurnPass:

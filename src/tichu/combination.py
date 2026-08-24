@@ -401,7 +401,7 @@ class Combination:
         ):
             for length in range(
                 combination.length if combination else STRAIGHT_MIN_SIZE,
-                combination.length + 1 if combination else 14,
+                combination.length + 1 if combination else len(cards),
             ):
                 for i in range(14, max(min_value, length) - 1, -1):
                     window_start = i - (length - 1)
@@ -428,6 +428,7 @@ class Combination:
                                         )
                                     ]
                                 )
+                                break
                             if len(card_buckets[val]) == 0:
                                 new_plays.extend(
                                     [
